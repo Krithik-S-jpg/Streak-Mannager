@@ -33,10 +33,10 @@ const fetchStreaks = async (userId, callback) => {
     const formatted = (data || []).map((s) => ({
       id: s.id,
       name: s.name,
-      emoji: s.emoji,
+      icon: s.emoji,
       category: s.category,
-      currentCount: s.current_count || 0,
-      bestCount: s.best_count || 0,
+      currentStreak: s.current_count || 0,
+      longestStreak: s.best_count || 0,
       targetCount: s.target_count || 1,
       lastCheckIn: s.last_check_in ? new Date(s.last_check_in) : null,
       createdAt: new Date(s.created_at),
@@ -60,7 +60,7 @@ const createStreak = async (userId, streakData) => {
         {
           user_id: userId,
           name: streakData.name,
-          emoji: streakData.emoji,
+          emoji: streakData.icon,
           category: streakData.category || 'personal',
           target_count: streakData.targetCount || 1,
           current_count: 0,
@@ -68,7 +68,7 @@ const createStreak = async (userId, streakData) => {
           check_ins: [],
           freezes_left: 3,
           notes: streakData.notes || '',
-          created_at: new Date(),
+          created_at: new Date().toISOString(),
         },
       ])
       .select();
@@ -81,7 +81,7 @@ const createStreak = async (userId, streakData) => {
   }
 };
 
-const checkInStreak = async (userId, streakId) => {
+const checkInToday = async (userId, streakId) => {
   try {
     const { data: streak, error: fetchError } = await supabase
       .from('streaks')
@@ -95,11 +95,16 @@ const checkInStreak = async (userId, streakId) => {
     const now = new Date();
     const today = now.toISOString().split('T')[0];
 
-    if (hasCheckedInToday(streak.check_ins || [], now)) {
+    // Check if already checked in today
+    const checkIns = streak.check_ins || [];
+    const hasCheckedToday = checkIns.some((date) => date.includes(today));
+    
+    if (hasCheckedToday) {
       throw new Error('Already checked in today!');
     }
 
-    const { shouldReset } = detectStreakReset(streak.last_check_in, streak.current_count);
+    const lastCheckIn = streak.last_check_in ? new Date(streak.last_check_in) : null;
+    const { shouldReset } = detectStreakReset(lastCheckIn, streak.current_count);
     const newCount = shouldReset ? 1 : (streak.current_count || 0) + 1;
     const newBestCount = Math.max(newCount, streak.best_count || 0);
 
@@ -108,7 +113,7 @@ const checkInStreak = async (userId, streakId) => {
       .update({
         current_count: newCount,
         best_count: newBestCount,
-        check_ins: [...(streak.check_ins || []), today],
+        check_ins: [...checkIns, today],
         last_check_in: now.toISOString(),
       })
       .eq('id', streakId)
@@ -129,7 +134,7 @@ const updateStreak = async (userId, streakId, streakData) => {
       .from('streaks')
       .update({
         name: streakData.name,
-        emoji: streakData.emoji,
+        emoji: streakData.icon || streakData.emoji,
         category: streakData.category,
         target_count: streakData.targetCount,
         notes: streakData.notes || '',
@@ -177,7 +182,7 @@ const archiveStreak = async (userId, streakId) => {
   }
 };
 
-const freezeStreak = async (userId, streakId) => {
+const useFreeze = async (userId, streakId) => {
   try {
     const { data: streak, error: fetchError } = await supabase
       .from('streaks')
@@ -204,12 +209,42 @@ const freezeStreak = async (userId, streakId) => {
   }
 };
 
+const recoverStreak = async (userId, streakId) => {
+  try {
+    const { data: streak, error: fetchError } = await supabase
+      .from('streaks')
+      .select('*')
+      .eq('id', streakId)
+      .eq('user_id', userId)
+      .single();
+
+    if (fetchError) throw fetchError;
+
+    // Recover by reducing current count by 2 (penalty)
+    const newCount = Math.max(0, (streak.current_count || 0) - 2);
+
+    const { data, error } = await supabase
+      .from('streaks')
+      .update({ current_count: newCount })
+      .eq('id', streakId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error recovering streak:', error);
+    throw error;
+  }
+};
+
 export const streakService = {
   subscribeToStreaks,
   createStreak,
-  checkInStreak,
+  checkInToday,
   updateStreak,
   deleteStreak,
   archiveStreak,
-  freezeStreak,
+  useFreeze,
+  recoverStreak,
 };

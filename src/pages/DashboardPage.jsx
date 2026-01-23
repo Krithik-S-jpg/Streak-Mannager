@@ -219,40 +219,46 @@ export const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-50 flex flex-col">
       <Header onSettingsClick={handleSettingsClick} />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-        {/* Messages */}
-        <AnimatePresence>
-          {message && (
-            <Alert
-              type={message.type}
-              message={message.text}
-              onClose={() => setMessage(null)}
-            />
-          )}
-        </AnimatePresence>
+      <main className="flex-1 w-full overflow-y-auto">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+          {/* Messages */}
+          <AnimatePresence>
+            {message && (
+              <Alert
+                type={message.type}
+                message={message.text}
+                onClose={() => setMessage(null)}
+              />
+            )}
+          </AnimatePresence>
 
-        {/* Title and CTA */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-slate-100">Your Streaks</h2>
-            <p className="text-slate-400 mt-1">
-              {streaks.length} active {streaks.length === 1 ? 'streak' : 'streaks'}
-            </p>
-          </div>
-          <Button
-            onClick={() => {
-              setEditingStreak(null);
-              setShowModal(true);
-            }}
-            variant="primary"
+          {/* Title and CTA */}
+          <motion.div 
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-16 gap-6"
           >
-            <Plus className="w-5 h-5" />
-            New Streak
-          </Button>
-        </div>
+            <div>
+              <h2 className="text-6xl font-bold text-slate-900 mb-3">Your Streaks</h2>
+              <p className="text-slate-600 text-lg font-medium">Build unbreakable habits and track your progress</p>
+            </div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+              <Button
+                onClick={() => {
+                  setEditingStreak(null);
+                  setShowModal(true);
+                }}
+                size="lg"
+                variant="primary"
+              >
+                <Plus className="w-5 h-5" />
+                New Streak
+              </Button>
+            </motion.div>
+          </motion.div>
 
         {/* Loading state */}
         {loading && <SkeletonLoader count={3} />}
@@ -279,66 +285,94 @@ export const DashboardPage = () => {
 
         {/* Streaks grid */}
         {!loading && streaks.length > 0 && (
-          <div className="space-y-6">
+          <div className="space-y-10">
             {/* Stats overview */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+            >
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-sky-900/20 border border-sky-800 rounded-lg p-4 text-center"
+                whileHover={{ y: -8 }}
+                className="bg-gradient-to-br from-blue-100 to-blue-50 border-2 border-blue-200 rounded-3xl p-8 text-center hover:border-blue-400 shadow-lg hover:shadow-blue-200 transition-all"
               >
-                <p className="text-sky-400 text-sm font-semibold mb-1">Total Streaks</p>
-                <p className="text-3xl font-bold text-sky-300">{streaks.length}</p>
+                <p className="text-blue-600 text-sm font-bold mb-3 uppercase tracking-widest">Total Streaks</p>
+                <motion.p 
+                  key={streaks.length}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="text-5xl font-bold text-blue-700"
+                >
+                  {streaks.length}
+                </motion.p>
               </motion.div>
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -8 }}
                 transition={{ delay: 0.1 }}
-                className="bg-amber-900/20 border border-amber-800 rounded-lg p-4 text-center"
+                className="bg-gradient-to-br from-amber-100 to-amber-50 border-2 border-amber-200 rounded-3xl p-8 text-center hover:border-amber-400 shadow-lg hover:shadow-amber-200 transition-all"
               >
-                <p className="text-amber-400 text-sm font-semibold mb-1">Longest Streak</p>
-                <p className="text-3xl font-bold text-amber-300">
+                <p className="text-amber-600 text-sm font-bold mb-3 uppercase tracking-widest">Longest Streak</p>
+                <motion.p 
+                  key={Math.max(...streaks.map((s) => s.longestStreak), 0)}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="text-5xl font-bold text-amber-700"
+                >
                   {Math.max(...streaks.map((s) => s.longestStreak), 0)}
-                </p>
+                </motion.p>
               </motion.div>
               <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
+                whileHover={{ y: -8 }}
                 transition={{ delay: 0.2 }}
-                className="bg-purple-900/20 border border-purple-800 rounded-lg p-4 text-center"
+                className="bg-gradient-to-br from-purple-100 to-purple-50 border-2 border-purple-200 rounded-3xl p-8 text-center hover:border-purple-400 shadow-lg hover:shadow-purple-200 transition-all"
               >
-                <p className="text-purple-400 text-sm font-semibold mb-1">Total Freezes</p>
-                <p className="text-3xl font-bold text-purple-300">
-                  {streaks.reduce((sum, s) => sum + s.freezesLeft, 0)}/
-                  {streaks.length * 2}
-                </p>
+                <p className="text-purple-600 text-sm font-bold mb-3 uppercase tracking-widest">Freezes Available</p>
+                <motion.p 
+                  key={streaks.reduce((sum, s) => sum + s.freezesLeft, 0)}
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  className="text-5xl font-bold text-purple-700"
+                >
+                  {streaks.reduce((sum, s) => sum + s.freezesLeft, 0)}
+                </motion.p>
               </motion.div>
-            </div>
+            </motion.div>
 
             {/* Streaks cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              {streaks.map((streak) => (
-                <StreakCard
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {streaks.map((streak, idx) => (
+                <motion.div
                   key={streak.id}
-                  streak={streak}
-                  onCheckIn={handleCheckIn}
-                  onUseFreeze={handleUseFreeze}
-                  onRecover={handleRecover}
-                  onEdit={handleEditStreak}
-                  onDelete={handleDeleteStreak}
-                  loading={actionLoading === streak.id}
-                />
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                >
+                  <StreakCard
+                    streak={streak}
+                    onCheckIn={handleCheckIn}
+                    onUseFreeze={handleUseFreeze}
+                    onRecover={handleRecover}
+                    onEdit={handleEditStreak}
+                    onDelete={handleDeleteStreak}
+                    loading={actionLoading === streak.id}
+                  />
+                </motion.div>
               ))}
             </div>
 
             {/* Calendar heatmap for first streak */}
             {streaks.length > 0 && (
-              <div className="mt-8">
+              <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mt-10"
+              >
                 <CalendarHeatmap streak={streaks[0]} />
-              </div>
+              </motion.div>
             )}
           </div>
         )}
+        </div>
       </main>
 
       <Footer />

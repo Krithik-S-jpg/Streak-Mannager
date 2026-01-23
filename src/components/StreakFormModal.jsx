@@ -81,10 +81,11 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
       title={streak ? 'Edit Streak' : 'Create New Streak'}
       actions={
         <>
-          <Button variant="secondary" onClick={onClose} disabled={loading}>
+          <Button key="cancel-btn" variant="secondary" onClick={onClose} disabled={loading}>
             Cancel
           </Button>
           <Button
+            key="submit-btn"
             variant="primary"
             onClick={handleSubmit}
             loading={loading}
@@ -95,12 +96,12 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
         </>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Streak name */}
         <Input
           label="Streak Name"
           name="name"
-          placeholder="e.g., Daily LeetCode"
+          placeholder="e.g., Daily Coding"
           value={formData.name}
           onChange={handleChange}
           error={errors.name}
@@ -132,20 +133,20 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
 
         {/* Icon selector */}
         <div>
-          <label className="block text-sm font-semibold text-slate-200 mb-2">
-            Icon
+          <label className="block text-sm font-semibold text-slate-200 mb-4">
+            Choose Icon
           </label>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="grid grid-cols-6 gap-3">
             {EMOJI_ICONS.map((icon) => (
               <motion.button
                 key={icon}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.15 }}
+                whileTap={{ scale: 0.9 }}
                 onClick={() => handleIconClick(icon)}
-                className={`p-3 text-2xl rounded-lg transition-all ${
+                className={`p-3 text-3xl rounded-xl transition-all ${
                   formData.icon === icon
-                    ? 'bg-sky-600 ring-2 ring-sky-400'
-                    : 'bg-slate-700 hover:bg-slate-600'
+                    ? 'bg-gradient-to-r from-sky-600 to-sky-500 ring-2 ring-sky-300 shadow-lg shadow-sky-500/30'
+                    : 'bg-slate-800/50 hover:bg-slate-700 border border-slate-700'
                 }`}
               >
                 {icon}

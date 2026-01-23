@@ -1,16 +1,18 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 * {
   @apply antialiased;
 }
 
 html {
-  color-scheme: dark;
+  color-scheme: light dark;
 }
 
 body {
-  @apply bg-slate-950 text-slate-100 font-sans;
-  font-family: 'Inter', sans-serif;
+  @apply text-slate-900 font-sans;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f1f5f9 100%);
+  background-attachment: fixed;
 }
 
 ::-webkit-scrollbar {
