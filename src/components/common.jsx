@@ -52,10 +52,10 @@ export const SkeletonLoader = ({ count = 3 }) => {
 // Alert component
 export const Alert = ({ type = 'info', message, onClose }) => {
   const bgColor = {
-    info: 'bg-blue-100 border-blue-300 text-blue-900',
-    success: 'bg-green-100 border-green-300 text-green-900',
-    warning: 'bg-yellow-100 border-yellow-300 text-yellow-900',
-    error: 'bg-red-100 border-red-300 text-red-900',
+    info: 'bg-blue-900/20 border-blue-800 text-blue-200',
+    success: 'bg-green-900/20 border-green-800 text-green-200',
+    warning: 'bg-yellow-900/20 border-yellow-800 text-yellow-200',
+    error: 'bg-red-900/20 border-red-800 text-red-200',
   };
 
   const Icon = type === 'error' ? AlertCircle : Info;
@@ -65,7 +65,7 @@ export const Alert = ({ type = 'info', message, onClose }) => {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className={`flex items-center gap-3 p-5 rounded-2xl border-2 ${bgColor[type]} font-semibold shadow-lg`}
+      className={`flex items-center gap-3 p-4 rounded-lg border ${bgColor[type]}`}
     >
       <Icon className="w-5 h-5 flex-shrink-0" />
       <p className="flex-1">{message}</p>
@@ -92,25 +92,23 @@ export const Button = ({
   ...props
 }) => {
   const baseClasses =
-    'font-bold rounded-2xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed';
+    'font-semibold rounded-lg transition-colors duration-200 flex items-center justify-center gap-2';
 
   const variants = {
-    primary: 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-blue-400/40 hover:scale-105',
-    secondary: 'bg-slate-200 hover:bg-slate-300 text-slate-900 shadow-md hover:shadow-slate-400/30 font-semibold',
-    danger: 'bg-red-600 hover:bg-red-700 text-white shadow-lg hover:shadow-red-500/40',
-    ghost: 'text-slate-700 hover:bg-slate-100 hover:text-slate-900 font-semibold',
+    primary: 'bg-sky-600 hover:bg-sky-700 text-white disabled:bg-slate-700',
+    secondary: 'bg-slate-700 hover:bg-slate-600 text-white disabled:bg-slate-800',
+    danger: 'bg-red-600 hover:bg-red-700 text-white disabled:bg-slate-700',
+    ghost: 'text-slate-300 hover:bg-slate-800 disabled:text-slate-600',
   };
 
   const sizes = {
-    sm: 'px-4 py-2 text-sm',
-    md: 'px-6 py-2.5 text-base',
-    lg: 'px-8 py-3.5 text-lg',
+    sm: 'px-3 py-2 text-sm',
+    md: 'px-4 py-2 text-base',
+    lg: 'px-6 py-3 text-lg',
   };
 
   return (
-    <motion.button
-      whileHover={{ scale: disabled ? 1 : 1.05 }}
-      whileTap={{ scale: disabled ? 1 : 0.95 }}
+    <button
       disabled={disabled || loading}
       className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
       {...props}
@@ -123,7 +121,7 @@ export const Button = ({
         />
       )}
       {children}
-    </motion.button>
+    </button>
   );
 };
 
@@ -138,21 +136,21 @@ export const Modal = ({ isOpen, onClose, title, children, actions }) => {
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
         onClick={onClose}
-        className="fixed inset-0 bg-black/40 z-40"
+        className="fixed inset-0 bg-black/50 z-40"
       />
       <motion.div
-        initial={{ opacity: 0, scale: 0.9, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 20 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.95 }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4"
       >
-        <div className="bg-gradient-to-br from-white to-blue-50 rounded-3xl shadow-2xl max-w-sm w-full border-2 border-blue-100">
-          <div className="p-8 border-b-2 border-blue-100">
-            <h2 className="text-3xl font-bold text-slate-900">{title}</h2>
+        <div className="bg-slate-900 rounded-lg shadow-xl max-w-sm w-full">
+          <div className="p-6 border-b border-slate-800">
+            <h2 className="text-xl font-bold text-slate-100">{title}</h2>
           </div>
-          <div className="p-8">{children}</div>
+          <div className="p-6">{children}</div>
           {actions && (
-            <div className="p-8 border-t-2 border-blue-100 flex gap-3 justify-end" key="modal-actions">
+            <div className="p-6 border-t border-slate-800 flex gap-3 justify-end">
               {actions}
             </div>
           )}
@@ -166,14 +164,14 @@ export const Modal = ({ isOpen, onClose, title, children, actions }) => {
 export const Input = ({ label, error, className = '', ...props }) => {
   return (
     <div className="w-full">
-      {label && <label className="block text-sm font-bold text-slate-900 mb-3">{label}</label>}
+      {label && <label className="block text-sm font-semibold text-slate-200 mb-2">{label}</label>}
       <input
-        className={`w-full px-4 py-3 bg-white border-2 rounded-2xl text-slate-900 placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all ${
-          error ? 'border-red-500' : 'border-slate-200'
+        className={`w-full px-4 py-2 bg-slate-800 border rounded-lg text-slate-100 placeholder-slate-500 focus:outline-none focus:border-sky-500 transition-colors ${
+          error ? 'border-red-600' : 'border-slate-700'
         } ${className}`}
         {...props}
       />
-      {error && <p className="text-red-600 text-sm font-semibold mt-2">{error}</p>}
+      {error && <p className="text-red-400 text-sm mt-1">{error}</p>}
     </div>
   );
 };
@@ -182,10 +180,10 @@ export const Input = ({ label, error, className = '', ...props }) => {
 export const Select = ({ label, options, error, className = '', ...props }) => {
   return (
     <div className="w-full">
-      {label && <label className="block text-sm font-bold text-slate-900 mb-3">{label}</label>}
+      {label && <label className="block text-sm font-semibold text-slate-200 mb-2">{label}</label>}
       <select
-        className={`w-full px-4 py-3 bg-white border-2 rounded-2xl text-slate-900 focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all ${
-          error ? 'border-red-500' : 'border-slate-200'
+        className={`w-full px-4 py-2 bg-slate-800 border rounded-lg text-slate-100 focus:outline-none focus:border-sky-500 transition-colors ${
+          error ? 'border-red-600' : 'border-slate-700'
         } ${className}`}
         {...props}
       >
@@ -195,7 +193,7 @@ export const Select = ({ label, options, error, className = '', ...props }) => {
           </option>
         ))}
       </select>
-      {error && <p className="text-red-600 text-sm font-semibold mt-2">{error}</p>}
+      {error && <p className="text-red-400 text-sm mt-1">{error}</p>}
     </div>
   );
 };
@@ -203,11 +201,11 @@ export const Select = ({ label, options, error, className = '', ...props }) => {
 // Badge component
 export const Badge = ({ children, variant = 'primary', className = '' }) => {
   const variants = {
-    primary: 'bg-blue-200 text-blue-900 border-2 border-blue-300 font-bold',
-    success: 'bg-green-200 text-green-900 border-2 border-green-300',
-    warning: 'bg-yellow-200 text-yellow-900 border-2 border-yellow-300',
-    danger: 'bg-red-200 text-red-900 border-2 border-red-300',
+    primary: 'bg-sky-900/50 text-sky-200 border border-sky-800',
+    success: 'bg-green-900/50 text-green-200 border border-green-800',
+    warning: 'bg-yellow-900/50 text-yellow-200 border border-yellow-800',
+    danger: 'bg-red-900/50 text-red-200 border border-red-800',
   };
 
-  return <span className={`px-4 py-2 rounded-full text-xs font-bold ${variants[variant]} ${className}`}>{children}</span>;
+  return <span className={`px-3 py-1 rounded-full text-sm font-semibold ${variants[variant]} ${className}`}>{children}</span>;
 };

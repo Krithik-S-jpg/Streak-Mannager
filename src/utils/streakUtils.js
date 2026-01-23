@@ -129,7 +129,42 @@ export const FREQUENCIES = {
 
 // Get emoji icon
 export const EMOJI_ICONS = [
-  '', '', '', '', '', '', '', '',
-  '', '', '', '', '', '', '', '',
-  '', '', '', '',
+  '🔥', '💧', '📚', '💪', '🧘', '💰', '🎵', '🎨',
+  '🍳', '🧹', '🦷', '🚶', '💊', '📵', '💻', '📝',
+  '🌱', '🚲', '🥦', '😴',
 ];
+
+// Leveling System
+export const LEVELS = [
+  { level: 1, min: 0, title: 'Novice Starter' },
+  { level: 2, min: 10, title: 'Consistent Keeper' },
+  { level: 3, min: 25, title: 'Streak Builder' },
+  { level: 4, min: 50, title: 'Momentum Master' },
+  { level: 5, min: 100, title: 'Habit Hero' },
+  { level: 6, min: 200, title: 'Discipline Disciple' },
+  { level: 7, min: 365, title: 'Legendary Lifer' },
+  { level: 8, min: 500, title: 'Eternal Flame' },
+  { level: 9, min: 1000, title: 'Grandmaster' },
+  { level: 10, min: 2000, title: 'Ascended Being' },
+];
+
+export const calculateLevel = (totalCheckIns) => {
+  for (let i = LEVELS.length - 1; i >= 0; i--) {
+    if (totalCheckIns >= LEVELS[i].min) {
+      return LEVELS[i];
+    }
+  }
+  return LEVELS[0];
+};
+
+export const getNextLevelThreshold = (currentLevel) => {
+  const nextLevelIndex = LEVELS.findIndex(l => l.level === currentLevel + 1);
+  if (nextLevelIndex === -1) return null; // Max level
+  return LEVELS[nextLevelIndex].min;
+};
+
+export const getNextMilestone = (currentCount) => {
+  const milestones = [3, 7, 14, 30, 60, 90, 100, 365, 500, 1000];
+  const next = milestones.find(m => m > currentCount);
+  return next || currentCount + 100; // Fallback
+};
