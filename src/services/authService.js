@@ -1,7 +1,27 @@
 ﻿import { supabase } from '../supabase';
 
+// Demo mode using localStorage if Supabase is not configured
+const DEMO_MODE = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 export const register = async (email, password, displayName) => {
   try {
+    if (DEMO_MODE) {
+      // Demo mode - store user in localStorage
+      const userId = 'demo-user-' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('demoUser', JSON.stringify({
+        uid: userId,
+        email,
+        displayName: displayName || email.split('@')[0],
+      }));
+      return {
+        user: {
+          uid: userId,
+          email,
+          displayName: displayName || email.split('@')[0],
+        },
+      };
+    }
+
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -38,6 +58,24 @@ export const register = async (email, password, displayName) => {
 
 export const login = async (email, password) => {
   try {
+    if (DEMO_MODE) {
+      // Demo mode - simple login simulation
+      const userId = localStorage.getItem('demoUserId') || 'demo-user-' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('demoUserId', userId);
+      localStorage.setItem('demoUser', JSON.stringify({
+        uid: userId,
+        email,
+        displayName: email.split('@')[0],
+      }));
+      return {
+        user: {
+          uid: userId,
+          email,
+          displayName: email.split('@')[0],
+        },
+      };
+    }
+
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -60,6 +98,12 @@ export const login = async (email, password) => {
 
 export const logout = async () => {
   try {
+    if (DEMO_MODE) {
+      localStorage.removeItem('demoUser');
+      localStorage.removeItem('demoUserId');
+      return;
+    }
+
     const { error } = await supabase.auth.signOut();
     if (error) throw new Error(error.message);
   } catch (error) {
@@ -68,6 +112,18 @@ export const logout = async () => {
 };
 
 export const subscribeToAuthStateChange = (callback) => {
+  if (DEMO_MODE) {
+    // Demo mode - check localStorage for user
+    const demoUser = localStorage.getItem('demoUser');
+    if (demoUser) {
+      callback(JSON.parse(demoUser));
+    } else {
+      callback(null);
+    }
+    // Return unsubscribe function
+    return () => {};
+  }
+
   const { data: { subscription } } = supabase.auth.onAuthStateChange(
     async (event, session) => {
       if (session?.user) {

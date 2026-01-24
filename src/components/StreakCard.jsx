@@ -38,7 +38,7 @@ export const StreakCard = ({
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, scale: 0.9 }}
       transition={{ duration: 0.2 }}
-      className={`relative overflow-hidden rounded-xl border border-slate-700/50 bg-gradient-to-br from-slate-800/80 to-slate-900/80 backdrop-blur-sm p-6 shadow-xl hover:shadow-2xl hover:border-orange-500/30 transition-all group`}
+      className={`relative overflow-hidden rounded-2xl border border-slate-700/40 bg-gradient-to-br from-slate-800/60 to-slate-900/60 backdrop-blur-md p-6 shadow-2xl hover:shadow-2xl hover:border-orange-500/40 transition-all duration-300 group`}
     >
       {/* Background glow effect */}
       {checkedInToday && (
@@ -133,9 +133,9 @@ export const StreakCard = ({
           onClick={() => onCheckIn(streak.id)}
           disabled={checkedInToday || loading}
           variant={checkedInToday ? 'outline' : 'primary'}
-          className={`w-full py-6 text-lg font-bold relative overflow-hidden group/btn ${
+          className={`w-full py-6 text-lg font-bold relative overflow-hidden group/btn shadow-lg transition-all ${
             checkedInToday
-              ? 'border-green-900/50 text-green-400 hover:bg-green-900/10'
+              ? 'border-green-900/50 text-green-400 hover:bg-green-900/20'
               : 'shadow-[0_0_20px_rgba(249,115,22,0.3)] hover:shadow-[0_0_30px_rgba(249,115,22,0.5)]'
           }`}
         >

@@ -104,8 +104,17 @@ export const DashboardPage = () => {
 
       setMessage({ type: 'success', text: `${randomMsg} Checked in for ${streak?.name}` });
 
-      // Trigger confetti or vibration here if possible
-      if (navigator.vibrate) navigator.vibrate(50);
+      // Trigger notifications and haptic feedback
+      if (navigator.vibrate) {
+        navigator.vibrate([50, 30, 50]); // Double tap vibration
+      }
+      
+      // Show push notification
+      notificationService.showNotification(`✅ ${streak?.name} checked in!`, {
+        body: `${randomMsg} ${streak?.currentCount} day streak!`,
+        tag: 'streak-checkin',
+        vibrate: [200, 100, 200],
+      });
 
     } catch (err) {
       setMessage({ type: 'error', text: err.message || 'Failed to check in.' });
@@ -145,13 +154,13 @@ export const DashboardPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col font-sans selection:bg-orange-500/30">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col font-sans selection:bg-orange-500/30">
       <Header
-        onSettingsClick={() => setMessage({ type: 'info', text: 'Settings coming soon!' })}
+        onSettingsClick={() => setShowSettings(true)}
         totalCheckIns={totalCheckIns}
       />
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
         {/* Messages Toast */}
         <AnimatePresence>
           {message && (
@@ -166,9 +175,9 @@ export const DashboardPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 bg-gradient-to-r from-slate-900 to-slate-800 rounded-2xl p-6 border border-slate-800 shadow-xl relative overflow-hidden"
+            className="mb-8 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl p-8 border border-slate-700/30 shadow-2xl backdrop-blur-md relative overflow-hidden"
           >
-             <div className="absolute top-0 right-0 w-64 h-64 bg-orange-500/5 blur-3xl rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
+             <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
 
              <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
                 <div>
@@ -264,8 +273,8 @@ export const DashboardPage = () => {
             </div>
 
             {/* Analytics Section (Simplified) */}
-            <div className="bg-slate-900/50 rounded-2xl p-6 border border-slate-800">
-               <div className="flex items-center gap-2 mb-6">
+            <div className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl p-8 border border-slate-700/30 backdrop-blur-md">
+               <div className="flex items-center gap-3 mb-6">
                  <BarChart3 className="w-6 h-6 text-slate-400" />
                  <h3 className="text-xl font-bold text-white">Activity Overview</h3>
                </div>
@@ -283,7 +292,7 @@ export const DashboardPage = () => {
 
       <Footer />
 
-      {/* Modal */}
+      {/* Streak Form Modal */}
       <StreakFormModal
         isOpen={showModal}
         onClose={() => {

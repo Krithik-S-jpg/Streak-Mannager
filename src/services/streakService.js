@@ -1,7 +1,17 @@
 import { supabase } from '../supabase';
 import { detectStreakReset, hasCheckedInToday } from '../utils/streakUtils';
 
+// Demo mode using localStorage if Supabase is not configured
+const DEMO_MODE = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 const subscribeToStreaks = (userId, callback) => {
+  if (DEMO_MODE) {
+    // Demo mode - use localStorage
+    const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+    callback(streaks);
+    return () => {};
+  }
+
   const subscription = supabase
     .channel(`streaks:${userId}`)
     .on(
@@ -22,6 +32,12 @@ const subscribeToStreaks = (userId, callback) => {
 
 const fetchStreaks = async (userId, callback) => {
   try {
+    if (DEMO_MODE) {
+      const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+      callback(streaks);
+      return;
+    }
+
     const { data, error } = await supabase
       .from('streaks')
       .select('*')
@@ -33,16 +49,15 @@ const fetchStreaks = async (userId, callback) => {
     const formatted = (data || []).map((s) => ({
       id: s.id,
       name: s.name,
-      emoji: s.emoji,
+      emoji: s.icon,
       category: s.category,
-      currentCount: s.current_count || 0,
-      bestCount: s.best_count || 0,
-      targetCount: s.target_count || 1,
+      frequency: s.frequency,
+      currentCount: s.current_streak || 0,
+      bestCount: s.longest_streak || 0,
       lastCheckIn: s.last_check_in ? new Date(s.last_check_in) : null,
-      createdAt: new Date(s.created_at),
-      checkIns: s.check_ins || [],
+      createdAt: s.created_at ? new Date(s.created_at) : new Date(),
+      checkIns: Array.isArray(s.check_ins) ? s.check_ins : [],
       freezesLeft: s.freezes_left || 3,
-      notes: s.notes || '',
     }));
 
     callback(formatted);
@@ -54,27 +69,54 @@ const fetchStreaks = async (userId, callback) => {
 
 const createStreak = async (userId, streakData) => {
   try {
+    if (DEMO_MODE) {
+      // Demo mode - create in localStorage
+      const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+      const newStreak = {
+        id: `streak_${Date.now()}`,
+        name: streakData.name,
+        emoji: streakData.icon || '🔥',
+        category: streakData.category || 'habit',
+        frequency: streakData.frequency || 'daily',
+        reminderTime: streakData.reminderTime || '09:00',
+        currentCount: 0,
+        bestCount: 0,
+        targetCount: streakData.targetCount || 1,
+        checkIns: [],
+        freezesLeft: 3,
+        lastCheckIn: null,
+        createdAt: new Date().toISOString(),
+        notes: '',
+      };
+      streaks.push(newStreak);
+      localStorage.setItem(`streaks_${userId}`, JSON.stringify(streaks));
+      return newStreak;
+    }
+
     const { data, error } = await supabase
       .from('streaks')
       .insert([
         {
           user_id: userId,
           name: streakData.name,
-          emoji: streakData.emoji,
+          icon: streakData.icon || '🔥',
           category: streakData.category || 'personal',
-          target_count: streakData.targetCount || 1,
-          current_count: 0,
-          best_count: 0,
+          frequency: streakData.frequency || 'daily',
+          reminder_time: streakData.reminderTime || '09:00',
+          current_streak: 0,
+          longest_streak: 0,
           check_ins: [],
           freezes_left: 3,
-          notes: streakData.notes || '',
-          created_at: new Date(),
         },
       ])
-      .select();
+      .select()
+      .single();
 
     if (error) throw error;
-    return data[0];
+    
+    // Trigger a refetch by calling fetchStreaks
+    // This ensures the UI updates immediately
+    return data;
   } catch (error) {
     console.error('Error creating streak:', error);
     throw error;
@@ -83,6 +125,31 @@ const createStreak = async (userId, streakData) => {
 
 const checkInStreak = async (userId, streakId) => {
   try {
+    if (DEMO_MODE) {
+      // Demo mode - update in localStorage
+      const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+      const streakIndex = streaks.findIndex(s => s.id === streakId);
+      if (streakIndex === -1) throw new Error('Streak not found');
+
+      const streak = streaks[streakIndex];
+      const now = new Date();
+      const today = now.toISOString().split('T')[0];
+
+      if (hasCheckedInToday(streak.checkIns || [], now)) {
+        throw new Error('Already checked in today!');
+      }
+
+      const newCount = (streak.currentCount || 0) + 1;
+
+      streak.currentCount = newCount;
+      streak.checkIns = [...(streak.checkIns || []), today];
+      streak.lastCheckIn = now.toISOString();
+
+      streaks[streakIndex] = streak;
+      localStorage.setItem(`streaks_${userId}`, JSON.stringify(streaks));
+      return streak;
+    }
+
     const { data: streak, error: fetchError } = await supabase
       .from('streaks')
       .select('*')
@@ -99,16 +166,17 @@ const checkInStreak = async (userId, streakId) => {
       throw new Error('Already checked in today!');
     }
 
-    const { shouldReset } = detectStreakReset(streak.last_check_in, streak.current_count);
-    const newCount = shouldReset ? 1 : (streak.current_count || 0) + 1;
-    const newBestCount = Math.max(newCount, streak.best_count || 0);
+    const { shouldReset } = detectStreakReset(streak.last_check_in, streak.current_streak);
+    const newCount = shouldReset ? 1 : (streak.current_streak || 0) + 1;
+    const newBestCount = Math.max(newCount, streak.longest_streak || 0);
+    const checkIns = Array.isArray(streak.check_ins) ? streak.check_ins : [];
 
     const { data, error } = await supabase
       .from('streaks')
       .update({
-        current_count: newCount,
-        best_count: newBestCount,
-        check_ins: [...(streak.check_ins || []), today],
+        current_streak: newCount,
+        longest_streak: newBestCount,
+        check_ins: [...checkIns, today],
         last_check_in: now.toISOString(),
       })
       .eq('id', streakId)
@@ -125,14 +193,32 @@ const checkInStreak = async (userId, streakId) => {
 
 const updateStreak = async (userId, streakId, streakData) => {
   try {
+    if (DEMO_MODE) {
+      // Demo mode - update in localStorage
+      const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+      const streakIndex = streaks.findIndex(s => s.id === streakId);
+      if (streakIndex === -1) throw new Error('Streak not found');
+
+      streaks[streakIndex] = {
+        ...streaks[streakIndex],
+        name: streakData.name,
+        emoji: streakData.icon || streakData.emoji,
+        category: streakData.category,
+        targetCount: streakData.targetCount,
+      };
+
+      localStorage.setItem(`streaks_${userId}`, JSON.stringify(streaks));
+      return streaks[streakIndex];
+    }
+
     const { data, error } = await supabase
       .from('streaks')
       .update({
         name: streakData.name,
-        emoji: streakData.emoji,
+        icon: streakData.icon || streakData.emoji,
         category: streakData.category,
-        target_count: streakData.targetCount,
-        notes: streakData.notes || '',
+        frequency: streakData.frequency,
+        reminder_time: streakData.reminderTime,
       })
       .eq('id', streakId)
       .eq('user_id', userId)
@@ -149,6 +235,14 @@ const updateStreak = async (userId, streakId, streakData) => {
 
 const deleteStreak = async (userId, streakId) => {
   try {
+    if (DEMO_MODE) {
+      // Demo mode - delete from localStorage
+      const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+      const filtered = streaks.filter(s => s.id !== streakId);
+      localStorage.setItem(`streaks_${userId}`, JSON.stringify(filtered));
+      return;
+    }
+
     const { error } = await supabase
       .from('streaks')
       .delete()
@@ -164,6 +258,17 @@ const deleteStreak = async (userId, streakId) => {
 
 const archiveStreak = async (userId, streakId) => {
   try {
+    if (DEMO_MODE) {
+      // Demo mode - update in localStorage
+      const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+      const streakIndex = streaks.findIndex(s => s.id === streakId);
+      if (streakIndex === -1) throw new Error('Streak not found');
+
+      streaks[streakIndex].archived = true;
+      localStorage.setItem(`streaks_${userId}`, JSON.stringify(streaks));
+      return streaks[streakIndex];
+    }
+
     const { error } = await supabase
       .from('streaks')
       .update({ archived: true })
@@ -179,6 +284,21 @@ const archiveStreak = async (userId, streakId) => {
 
 const freezeStreak = async (userId, streakId) => {
   try {
+    if (DEMO_MODE) {
+      // Demo mode - update in localStorage
+      const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+      const streakIndex = streaks.findIndex(s => s.id === streakId);
+      if (streakIndex === -1) throw new Error('Streak not found');
+
+      const streak = streaks[streakIndex];
+      if ((streak.freezesLeft || 0) <= 0) throw new Error('No freezes left!');
+
+      streak.freezesLeft = (streak.freezesLeft || 3) - 1;
+      streaks[streakIndex] = streak;
+      localStorage.setItem(`streaks_${userId}`, JSON.stringify(streaks));
+      return streak;
+    }
+
     const { data: streak, error: fetchError } = await supabase
       .from('streaks')
       .select('freezes_left')

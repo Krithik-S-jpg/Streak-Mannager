@@ -1,10 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { calculateLevel, getNextLevelThreshold } from '../utils/streakUtils';
 
 export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
 
   const currentLevelInfo = calculateLevel(totalCheckIns);
@@ -25,8 +27,8 @@ export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
   };
 
   return (
-    <header className="bg-slate-900/50 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
-      <div className="max-w-6xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <header className="bg-gradient-to-b from-slate-900/80 to-slate-900/40 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30 shadow-xl">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
@@ -72,7 +74,7 @@ export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
                 </div>
 
                 <button
-                  onClick={onSettingsClick}
+                  onClick={() => navigate('/settings')}
                   className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                   title="Settings"
                 >

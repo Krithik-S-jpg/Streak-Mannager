@@ -17,8 +17,10 @@ export const CalendarHeatmap = ({ streak }) => {
   };
 
   return (
-    <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-      <h3 className="text-lg font-bold text-slate-100 mb-4">Activity Heatmap</h3>
+    <div className="bg-gradient-to-br from-slate-800/60 to-slate-700/40 rounded-xl p-6 border border-slate-700/30 backdrop-blur-sm">
+      <h3 className="text-lg font-bold text-slate-100 mb-4 flex items-center gap-2">
+        <span>📊</span> Activity Heatmap
+      </h3>
       <div className="inline-flex flex-col gap-2">
         {/* Day labels */}
         <div className="flex gap-1">
