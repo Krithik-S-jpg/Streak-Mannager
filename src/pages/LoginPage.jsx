@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { Mail } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { Alert, Button, Input } from '../components/common';
+import { Alert, Button, Input, Modal } from '../components/common';
 import { validateEmail, validatePassword } from '../utils/validation';
 
 export const LoginPage = () => {
@@ -17,6 +18,10 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
   const [message, setMessage] = useState(null);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
+  const [forgotMessage, setForgotMessage] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -59,6 +64,34 @@ export const LoginPage = () => {
     }
   };
 
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    
+    if (!validateEmail(forgotEmail)) {
+      setForgotMessage({ type: 'error', text: 'Please enter a valid email address' });
+      return;
+    }
+
+    try {
+      setForgotLoading(true);
+      // In demo mode, just show success message
+      setForgotMessage({ 
+        type: 'success', 
+        text: 'Check your email for password reset instructions! 📧' 
+      });
+      
+      setTimeout(() => {
+        setShowForgotPassword(false);
+        setForgotEmail('');
+        setForgotMessage(null);
+      }, 3000);
+    } catch (err) {
+      setForgotMessage({ type: 'error', text: 'Failed to send reset email. Try again later.' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex items-center justify-center p-4">
       <motion.div
@@ -83,7 +116,7 @@ export const LoginPage = () => {
         {/* Form */}
         <motion.form
           onSubmit={handleSubmit}
-          className="bg-slate-800 rounded-lg p-8 border border-slate-700 space-y-4"
+          className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-8 border border-slate-700/50 space-y-4 backdrop-blur-xl shadow-2xl"
         >
           {message && (
             <Alert
@@ -115,6 +148,16 @@ export const LoginPage = () => {
             disabled={loading}
           />
 
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
+              className="text-xs text-sky-400 hover:text-sky-300 font-semibold transition-colors"
+            >
+              Forgot password?
+            </button>
+          </div>
+
           <Button
             type="submit"
             variant="primary"
@@ -141,6 +184,62 @@ export const LoginPage = () => {
         <div className="text-center mt-6 text-slate-500 text-sm">
           <p>Demo mode: Use any email and password to get started</p>
         </div>
+
+        {/* Forgot Password Modal */}
+        <Modal
+          isOpen={showForgotPassword}
+          onClose={() => {
+            setShowForgotPassword(false);
+            setForgotEmail('');
+            setForgotMessage(null);
+          }}
+          title="Reset Your Password"
+          actions={
+            <>
+              <Button 
+                variant="secondary" 
+                onClick={() => {
+                  setShowForgotPassword(false);
+                  setForgotEmail('');
+                  setForgotMessage(null);
+                }} 
+                disabled={forgotLoading}
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleForgotPassword}
+                loading={forgotLoading}
+                disabled={forgotLoading}
+              >
+                <Mail className="w-4 h-4" />
+                Send Reset Link
+              </Button>
+            </>
+          }
+        >
+          <div className="space-y-4">
+            {forgotMessage && (
+              <Alert
+                type={forgotMessage.type}
+                message={forgotMessage.text}
+                onClose={() => setForgotMessage(null)}
+              />
+            )}
+            <p className="text-slate-300 text-sm">
+              Enter your email address and we'll send you a link to reset your password.
+            </p>
+            <Input
+              label="Email Address"
+              type="email"
+              placeholder="your@email.com"
+              value={forgotEmail}
+              onChange={(e) => setForgotEmail(e.target.value)}
+              disabled={forgotLoading}
+            />
+          </div>
+        </Modal>
       </motion.div>
     </div>
   );

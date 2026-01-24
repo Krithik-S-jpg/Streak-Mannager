@@ -33,6 +33,10 @@ export const useStreaks = (userId) => {
       try {
         setError(null);
         const id = await streakService.createStreak(userId, streakData);
+        // Refetch streaks to update UI immediately
+        streakService.subscribeToStreaks(userId, (data) => {
+          setStreaks(data);
+        });
         return id;
       } catch (err) {
         setError(err.message);

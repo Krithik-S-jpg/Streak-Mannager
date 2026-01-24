@@ -92,7 +92,7 @@ export const RegisterPage = () => {
         {/* Form */}
         <motion.form
           onSubmit={handleSubmit}
-          className="bg-slate-800 rounded-lg p-8 border border-slate-700 space-y-4"
+          className="bg-gradient-to-br from-slate-800/80 to-slate-900/80 rounded-2xl p-8 border border-slate-700/50 space-y-4 backdrop-blur-xl shadow-2xl"
         >
           {message && (
             <Alert

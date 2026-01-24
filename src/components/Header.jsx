@@ -1,10 +1,20 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, Settings } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { LogOut, Settings, User } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { calculateLevel, getNextLevelThreshold } from '../utils/streakUtils';
 
-export const Header = ({ onSettingsClick }) => {
+export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
+  const navigate = useNavigate();
   const { user, logout } = useAuth();
+
+  const currentLevelInfo = calculateLevel(totalCheckIns);
+  const nextLevelMin = getNextLevelThreshold(currentLevelInfo.level);
+
+  const progress = nextLevelMin
+    ? ((totalCheckIns - currentLevelInfo.min) / (nextLevelMin - currentLevelInfo.min)) * 100
+    : 100;
 
   const handleLogout = async () => {
     if (window.confirm('Are you sure you want to log out?')) {
@@ -17,39 +27,67 @@ export const Header = ({ onSettingsClick }) => {
   };
 
   return (
-    <header className="bg-slate-900/50 backdrop-blur-md border-b border-slate-800 sticky top-0 z-30">
-      <div className="max-w-6xl mx-auto px-4 py-4 flex items-center justify-between">
+    <header className="bg-gradient-to-b from-slate-900/80 to-slate-900/40 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30 shadow-xl">
+      <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
           className="flex items-center gap-2"
         >
-          <span className="text-3xl">🔥</span>
-          <h1 className="text-2xl font-bold text-slate-100">Streak Maintainer</h1>
+          <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(251,146,60,0.5)]">🔥</span>
+          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">
+            Streak Maintainer
+          </h1>
         </motion.div>
 
-        {/* User info and actions */}
-        <div className="flex items-center gap-4">
+        {/* Level & Actions */}
+        <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
           {user && (
             <>
-              <span className="text-sm text-slate-400 hidden sm:inline">
-                {user.email}
-              </span>
-              <button
-                onClick={onSettingsClick}
-                className="p-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800 rounded-lg transition-colors"
-                title="Settings"
-              >
-                <Settings className="w-5 h-5" />
-              </button>
-              <button
-                onClick={handleLogout}
-                className="p-2 text-slate-400 hover:text-slate-200 hover:bg-red-900/20 rounded-lg transition-colors"
-                title="Logout"
-              >
-                <LogOut className="w-5 h-5" />
-              </button>
+              {/* Level Progress */}
+              <div className="flex flex-col items-end mr-2">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-orange-400">
+                  <span>Level {currentLevelInfo.level}</span>
+                  <span className="text-slate-500">•</span>
+                  <span>{currentLevelInfo.title}</span>
+                </div>
+                <div className="w-32 h-2 bg-slate-800 rounded-full mt-1 overflow-hidden relative group">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                    transition={{ duration: 1, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-orange-500 to-red-600"
+                  />
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-black/60 flex items-center justify-center text-[8px] text-white transition-opacity">
+                    {totalCheckIns} / {nextLevelMin || '∞'} XP
+                  </div>
+                </div>
+              </div>
+
+              {/* User Actions */}
+              <div className="flex items-center gap-2 border-l border-slate-800 pl-4">
+                <div className="flex items-center gap-2 mr-2">
+                   <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center border border-slate-700 text-slate-300">
+                      {user.displayName ? user.displayName[0].toUpperCase() : <User size={16} />}
+                   </div>
+                </div>
+
+                <button
+                  onClick={() => navigate('/settings')}
+                  className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
+                  title="Settings"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+                <button
+                  onClick={handleLogout}
+                  className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-950/30 rounded-lg transition-colors"
+                  title="Logout"
+                >
+                  <LogOut className="w-5 h-5" />
+                </button>
+              </div>
             </>
           )}
         </div>

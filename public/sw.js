@@ -1,5 +1,5 @@
 // Service Worker for Streak Maintainer PWA
-const CACHE_NAME = 'streak-maintainer-v1';
+const CACHE_NAME = 'streak-maintainer-v2';
 const urlsToCache = [
   '/',
   '/index.html',
@@ -43,6 +43,16 @@ self.addEventListener('fetch', (event) => {
 
   // Skip Firebase requests
   if (event.request.url.includes('firebase') || event.request.url.includes('firestore')) {
+    return;
+  }
+
+  // Skip dev requests
+  const url = new URL(event.request.url);
+  if (url.pathname.startsWith('/src') ||
+      url.pathname.startsWith('/node_modules') ||
+      url.pathname.startsWith('/@') ||
+      url.hostname === 'localhost' ||
+      url.hostname === '127.0.0.1') {
     return;
   }
 
