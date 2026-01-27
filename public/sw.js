@@ -1,5 +1,5 @@
 // Service Worker for Streak Maintainer PWA
-const CACHE_NAME = 'streak-maintainer-v2';
+const CACHE_NAME = 'streak-maintainer-v3';
 const urlsToCache = [
   '/',
   '/index.html',
