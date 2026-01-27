@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, BarChart3, Calendar, Flame } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
@@ -8,7 +8,10 @@ import { Footer } from '../components/Footer';
 import { StreakCard } from '../components/StreakCard';
 import { CalendarHeatmap } from '../components/CalendarHeatmap';
 import { StreakFormModal } from '../components/StreakFormModal';
+import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
+import { StreakControls } from '../components/StreakControls';
 import { EmptyState, SkeletonLoader, Button, Alert } from '../components/common';
+import { streakService } from '../services/streakService';
 import { notificationService } from '../services/notificationService';
 import { hasCheckedInToday } from '../utils/streakUtils';
 
@@ -30,6 +33,11 @@ export const DashboardPage = () => {
   const [modalLoading, setModalLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
+  
+  // Search, filter, and sort state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState('current-desc');
+  const [hideArchived, setHideArchived] = useState(true);
 
   // Stats calculation
   const totalStreaks = streaks.length;
@@ -37,6 +45,47 @@ export const DashboardPage = () => {
   const totalCheckIns = streaks.reduce((acc, s) => acc + (s.currentCount || 0), 0); // Simplified XP
   const checkedInTodayCount = streaks.filter(s => hasCheckedInToday(s.checkIns)).length;
   const dailyProgress = totalStreaks > 0 ? (checkedInTodayCount / totalStreaks) * 100 : 0;
+
+  // Filter and sort streaks
+  const filteredAndSortedStreaks = useMemo(() => {
+    let result = [...streaks];
+
+    // Filter by archive status
+    if (hideArchived) {
+      result = result.filter(s => !s.archived);
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      result = result.filter(
+        s =>
+          s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          s.category.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+    }
+
+    // Sort
+    result.sort((a, b) => {
+      switch (sortBy) {
+        case 'current-desc':
+          return (b.currentCount || 0) - (a.currentCount || 0);
+        case 'current-asc':
+          return (a.currentCount || 0) - (b.currentCount || 0);
+        case 'best-desc':
+          return (b.bestCount || 0) - (a.bestCount || 0);
+        case 'best-asc':
+          return (a.bestCount || 0) - (b.bestCount || 0);
+        case 'newest':
+          return new Date(b.createdAt) - new Date(a.createdAt);
+        case 'oldest':
+          return new Date(a.createdAt) - new Date(b.createdAt);
+        default:
+          return 0;
+      }
+    });
+
+    return result;
+  }, [streaks, searchQuery, sortBy, hideArchived]);
 
   // Initialize PWA
   useEffect(() => {
@@ -87,6 +136,30 @@ export const DashboardPage = () => {
       setMessage({ type: 'success', text: 'Streak deleted.' });
     } catch (err) {
       setMessage({ type: 'error', text: 'Failed to delete streak.' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleArchiveStreak = async (streakId) => {
+    try {
+      setActionLoading(streakId);
+      await streakService.archiveStreak(user?.uid, streakId);
+      setMessage({ type: 'success', text: 'Streak archived.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to archive streak.' });
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleUnarchiveStreak = async (streakId) => {
+    try {
+      setActionLoading(streakId);
+      await streakService.unarchiveStreak(user?.uid, streakId);
+      setMessage({ type: 'success', text: 'Streak restored.' });
+    } catch (err) {
+      setMessage({ type: 'error', text: 'Failed to restore streak.' });
     } finally {
       setActionLoading(null);
     }
@@ -256,20 +329,41 @@ export const DashboardPage = () => {
 
         {/* Streaks Grid */}
         {!loading && streaks.length > 0 && (
-          <div className="space-y-12">
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-              {streaks.map((streak) => (
-                <StreakCard
-                  key={streak.id}
-                  streak={streak}
-                  onCheckIn={handleCheckIn}
-                  onUseFreeze={handleUseFreeze}
-                  onRecover={handleRecover}
-                  onEdit={handleEditStreak}
-                  onDelete={handleDeleteStreak}
-                  loading={actionLoading === streak.id}
-                />
-              ))}
+          <div className="space-y-8">
+            {/* Analytics Dashboard */}
+            <AnalyticsDashboard streaks={streaks} />
+
+            {/* Search, Filter, Sort Controls */}
+            <StreakControls
+              searchQuery={searchQuery}
+              onSearchChange={setSearchQuery}
+              sortBy={sortBy}
+              onSortChange={setSortBy}
+              filterArchived={hideArchived}
+              onFilterChange={setHideArchived}
+            />
+
+            {/* Streaks Grid */}
+            {filteredAndSortedStreaks.length > 0 ? (
+              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                {filteredAndSortedStreaks.map((streak) => (
+                  <StreakCard
+                    key={streak.id}
+                    streak={streak}
+                    onCheckIn={handleCheckIn}
+                    onUseFreeze={handleUseFreeze}
+                    onRecover={handleRecover}
+                    onEdit={handleEditStreak}
+                    onDelete={handleDeleteStreak}
+                    loading={actionLoading === streak.id}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-slate-400">No streaks match your search criteria</p>
+              </div>
+            )}
             </div>
 
             {/* Analytics Section (Simplified) */}

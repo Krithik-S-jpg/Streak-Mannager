@@ -65,9 +65,20 @@ export const useStreaks = (userId) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         setError(null);
+        // Immediately remove from UI
+        setStreaks((prevStreaks) => prevStreaks.filter(s => s.id !== streakId));
+        
+        // Delete from Supabase in background
         await streakService.deleteStreak(userId, streakId);
       } catch (err) {
         setError(err.message);
+        // Re-fetch to restore if delete failed
+        await new Promise((resolve) => {
+          streakService.fetchStreaks(userId, (data) => {
+            setStreaks(data);
+            resolve(data);
+          });
+        });
         throw err;
       }
     },

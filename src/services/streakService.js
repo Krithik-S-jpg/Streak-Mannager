@@ -282,6 +282,32 @@ const archiveStreak = async (userId, streakId) => {
   }
 };
 
+const unarchiveStreak = async (userId, streakId) => {
+  try {
+    if (DEMO_MODE) {
+      // Demo mode - update in localStorage
+      const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
+      const streakIndex = streaks.findIndex(s => s.id === streakId);
+      if (streakIndex === -1) throw new Error('Streak not found');
+
+      streaks[streakIndex].archived = false;
+      localStorage.setItem(`streaks_${userId}`, JSON.stringify(streaks));
+      return streaks[streakIndex];
+    }
+
+    const { error } = await supabase
+      .from('streaks')
+      .update({ archived: false })
+      .eq('id', streakId)
+      .eq('user_id', userId);
+
+    if (error) throw error;
+  } catch (error) {
+    console.error('Error unarchiving streak:', error);
+    throw error;
+  }
+};
+
 const freezeStreak = async (userId, streakId) => {
   try {
     if (DEMO_MODE) {
@@ -324,12 +350,35 @@ const freezeStreak = async (userId, streakId) => {
   }
 };
 
+const recoverStreak = async (userId, streakId) => {
+  try {
+    const { data, error } = await supabase
+      .from('streaks')
+      .update({ current_streak: 0, freezes_left: 3 })
+      .eq('id', streakId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error recovering streak:', error);
+    throw error;
+  }
+};
+
 export const streakService = {
   subscribeToStreaks,
+  fetchStreaks,
   createStreak,
   checkInStreak,
+  checkInToday: checkInStreak,
   updateStreak,
   deleteStreak,
   archiveStreak,
+  unarchiveStreak,
   freezeStreak,
+  useFreeze: freezeStreak,
+  recoverStreak,
 };
