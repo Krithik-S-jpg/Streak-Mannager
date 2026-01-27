@@ -355,6 +355,8 @@ export const DashboardPage = () => {
                     onRecover={handleRecover}
                     onEdit={handleEditStreak}
                     onDelete={handleDeleteStreak}
+                    onArchive={handleArchiveStreak}
+                    onUnarchive={handleUnarchiveStreak}
                     loading={actionLoading === streak.id}
                   />
                 ))}

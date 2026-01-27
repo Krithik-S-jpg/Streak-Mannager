@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, Trash2, Zap, RotateCcw, Flame, Calendar, Trophy, Lock } from 'lucide-react';
+import { ChevronDown, Trash2, Zap, RotateCcw, Flame, Calendar, Trophy, Lock, Archive, ArchiveRestore } from 'lucide-react';
 import { hasCheckedInToday, formatDate, getNextMilestone } from '../utils/streakUtils';
 import { Button, Badge } from './common';
 
@@ -11,6 +11,8 @@ export const StreakCard = ({
   onRecover,
   onEdit,
   onDelete,
+  onArchive,
+  onUnarchive,
   loading,
 }) => {
   const [showActions, setShowActions] = useState(false);
@@ -202,6 +204,31 @@ export const StreakCard = ({
                   className="w-full text-xs"
                 >
                   Edit Streak
+                </Button>
+                <Button
+                  onClick={() => {
+                    if (streak.archived) {
+                      onUnarchive(streak.id);
+                    } else {
+                      onArchive(streak.id);
+                    }
+                    setShowActions(false);
+                  }}
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs text-blue-400 hover:text-blue-300 hover:bg-blue-900/20"
+                >
+                  {streak.archived ? (
+                    <>
+                      <ArchiveRestore className="w-3 h-3 mr-1.5" />
+                      Restore
+                    </>
+                  ) : (
+                    <>
+                      <Archive className="w-3 h-3 mr-1.5" />
+                      Archive
+                    </>
+                  )}
                 </Button>
                 <Button
                   onClick={() => {
