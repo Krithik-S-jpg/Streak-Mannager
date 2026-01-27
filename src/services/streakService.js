@@ -1,8 +1,8 @@
 import { supabase } from '../supabase';
 import { detectStreakReset, hasCheckedInToday } from '../utils/streakUtils';
 
-// Demo mode using localStorage if Supabase is not configured
-const DEMO_MODE = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+// Force Supabase mode - disable demo mode
+const DEMO_MODE = false;
 
 const subscribeToStreaks = (userId, callback) => {
   if (DEMO_MODE) {

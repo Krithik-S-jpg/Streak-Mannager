@@ -27,7 +27,7 @@ export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
   };
 
   return (
-    <header className="bg-gradient-to-b from-slate-900/80 to-slate-900/40 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30 shadow-xl">
+    <header className="bg-gradient-to-b from-slate-900/80 to-slate-950 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30 shadow-xl">
       <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
         {/* Logo */}
         <motion.div
