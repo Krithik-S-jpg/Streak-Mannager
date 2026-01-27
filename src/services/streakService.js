@@ -58,6 +58,10 @@ const fetchStreaks = async (userId, callback) => {
       createdAt: s.created_at ? new Date(s.created_at) : new Date(),
       checkIns: Array.isArray(s.check_ins) ? s.check_ins : [],
       freezesLeft: s.freezes_left || 3,
+      targetCount: s.target_count || 30,
+      reminderTime: s.reminder_time || '09:00',
+      goalCount: s.goal_count || 0,
+      archived: s.archived || false,
     }));
 
     callback(formatted);
@@ -103,10 +107,13 @@ const createStreak = async (userId, streakData) => {
           category: streakData.category || 'personal',
           frequency: streakData.frequency || 'daily',
           reminder_time: streakData.reminderTime || '09:00',
+          target_count: streakData.targetCount || 30,
+          goal_count: 0,
           current_streak: 0,
           longest_streak: 0,
           check_ins: [],
           freezes_left: 3,
+          archived: false,
         },
       ])
       .select()
@@ -368,6 +375,24 @@ const recoverStreak = async (userId, streakId) => {
   }
 };
 
+const updateGoal = async (userId, streakId, goalUpdates) => {
+  try {
+    const { data, error } = await supabase
+      .from('streaks')
+      .update(goalUpdates)
+      .eq('id', streakId)
+      .eq('user_id', userId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error updating goal:', error);
+    throw error;
+  }
+};
+
 export const streakService = {
   subscribeToStreaks,
   fetchStreaks,
@@ -381,4 +406,5 @@ export const streakService = {
   freezeStreak,
   useFreeze: freezeStreak,
   recoverStreak,
+  updateGoal,
 };

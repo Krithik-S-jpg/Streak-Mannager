@@ -10,6 +10,7 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
     category: 'app',
     frequency: 'daily',
     reminderTime: '09:00',
+    targetCount: 30,
   });
 
   const [errors, setErrors] = useState({});
@@ -18,10 +19,11 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
     if (streak) {
       setFormData({
         name: streak.name,
-        icon: streak.icon,
+        icon: streak.emoji,
         category: streak.category,
         frequency: streak.frequency,
         reminderTime: streak.reminderTime || '09:00',
+        targetCount: streak.targetCount || 30,
       });
     } else {
       setFormData({
@@ -30,6 +32,7 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
         category: 'app',
         frequency: 'daily',
         reminderTime: '09:00',
+        targetCount: 30,
       });
     }
     setErrors({});
@@ -161,6 +164,18 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
           type="time"
           value={formData.reminderTime}
           onChange={handleChange}
+        />
+
+        {/* Target count */}
+        <Input
+          label="Daily Target Count"
+          name="targetCount"
+          type="number"
+          min="1"
+          max="100"
+          value={formData.targetCount}
+          onChange={handleChange}
+          placeholder="Set your daily goal"
         />
       </div>
     </Modal>
