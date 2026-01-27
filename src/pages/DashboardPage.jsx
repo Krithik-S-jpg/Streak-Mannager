@@ -364,7 +364,6 @@ export const DashboardPage = () => {
                 <p className="text-slate-400">No streaks match your search criteria</p>
               </div>
             )}
-            </div>
 
             {/* Analytics Section (Simplified) */}
             <div className="bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl p-8 border border-slate-700/30 backdrop-blur-md">
