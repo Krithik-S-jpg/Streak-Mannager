@@ -34,25 +34,34 @@ const sendLocalNotification = (title, options = {}) => {
 const sendPushNotification = async (title, options = {}) => {
   try {
     // Check if service worker is available
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      console.log('Push notifications not supported');
-      return false;
+    if (!('serviceWorker' in navigator)) {
+      console.log('Service Worker not supported, falling back to local notification');
+      sendLocalNotification(title, options);
+      return true;
     }
 
     const registration = await navigator.serviceWorker.ready;
 
     // Show notification via service worker
-    registration.showNotification(title, {
-      icon: '/favicon.ico',
-      badge: '🔥',
-      tag: 'streak-notification',
-      requireInteraction: false,
-      ...options,
-    });
-
-    return true;
+    try {
+      registration.showNotification(title, {
+        icon: '/favicon.ico',
+        badge: '🔥',
+        tag: 'streak-notification',
+        requireInteraction: false,
+        vibrate: [100, 50, 100], // Vibration pattern for mobile
+        ...options,
+      });
+      return true;
+    } catch (err) {
+      console.log('Service Worker notification failed, using local:', err);
+      sendLocalNotification(title, options);
+      return true;
+    }
   } catch (error) {
     console.error('Error sending push notification:', error);
+    // Fallback to local notification
+    sendLocalNotification(title, options);
     return false;
   }
 };

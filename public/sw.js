@@ -112,18 +112,42 @@ async function syncStreaks() {
 self.addEventListener('push', (event) => {
   if (!event.data) return;
 
-  const data = event.data.json();
-  const options = {
-    body: data.body,
-    icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75" fill="%230284c7">🔥</text></svg>',
-    badge: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y="75" font-size="75" fill="%230284c7">🔥</text></svg>',
-    tag: data.tag || 'streak-notification',
-    requireInteraction: false,
-  };
+  try {
+    const data = event.data.json();
+    const options = {
+      body: data.body || 'Keep up with your streaks!',
+      icon: '/favicon.ico',
+      badge: '🔥',
+      tag: data.tag || 'streak-notification',
+      requireInteraction: false,
+      vibrate: [100, 50, 100], // Mobile vibration pattern
+      actions: [
+        {
+          action: 'open',
+          title: 'Open App',
+        },
+        {
+          action: 'close',
+          title: 'Close',
+        },
+      ],
+    };
 
-  event.waitUntil(
-    self.registration.showNotification(data.title, options)
-  );
+    event.waitUntil(
+      self.registration.showNotification(data.title || 'Streak Maintainer', options)
+    );
+  } catch (error) {
+    console.error('Push event error:', error);
+    // Fallback notification
+    event.waitUntil(
+      self.registration.showNotification('Streak Maintainer', {
+        body: 'Time to check in!',
+        icon: '/favicon.ico',
+        badge: '🔥',
+        vibrate: [100, 50, 100],
+      })
+    );
+  }
 });
 
 // Notification click handler
@@ -131,15 +155,24 @@ self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(
     clients.matchAll({ type: 'window' }).then((clientList) => {
+      // Check if app window is already open
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
-        if (client.url === '/' && 'focus' in client) {
-          return client.focus();
+        if (client.url === '/' || client.url.includes('track-streak')) {
+          if ('focus' in client) {
+            return client.focus();
+          }
         }
       }
+      // If no window, open a new one
       if (clients.openWindow) {
         return clients.openWindow('/');
       }
     })
   );
+});
+
+// Notification close handler
+self.addEventListener('notificationclose', (event) => {
+  console.log('Notification closed:', event.notification.tag);
 });
