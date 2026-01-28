@@ -104,10 +104,16 @@ export const logout = async () => {
       return;
     }
 
-    const { error } = await supabase.auth.signOut();
-    if (error) throw new Error(error.message);
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    // Only sign out if there's an active session
+    if (session) {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw new Error(error.message);
+    }
   } catch (error) {
-    throw error;
+    // Log but don't throw - logout should always succeed
+    console.warn('Logout warning:', error.message);
   }
 };
 
