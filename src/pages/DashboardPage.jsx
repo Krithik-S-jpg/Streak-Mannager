@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plus, BarChart3, Calendar, Flame } from 'lucide-react';
+import { Plus, BarChart3, Calendar, Flame, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useStreaks } from '../hooks/useStreaks';
 import { Header } from '../components/Header';
@@ -8,6 +8,7 @@ import { Footer } from '../components/Footer';
 import { StreakCard } from '../components/StreakCard';
 import { CalendarHeatmap } from '../components/CalendarHeatmap';
 import { StreakFormModal } from '../components/StreakFormModal';
+import { HabitTemplatesLibrary } from '../components/HabitTemplatesLibrary';
 import { AnalyticsDashboard } from '../components/AnalyticsDashboard';
 import { StreakControls } from '../components/StreakControls';
 import { EmptyState, SkeletonLoader, Button, Alert } from '../components/common';
@@ -29,7 +30,9 @@ export const DashboardPage = () => {
   } = useStreaks(user?.uid);
 
   const [showModal, setShowModal] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [editingStreak, setEditingStreak] = useState(null);
+  const [templateData, setTemplateData] = useState(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [message, setMessage] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
@@ -105,6 +108,7 @@ export const DashboardPage = () => {
       setModalLoading(true);
       await createStreak(formData);
       setShowModal(false);
+      setTemplateData(null);
       setMessage({ type: 'success', text: 'Streak created successfully! 🎉' });
       notificationService.showNotification('Streak Created!', { body: `Tracking "${formData.name}"!` });
     } catch (err) {
@@ -226,6 +230,11 @@ export const DashboardPage = () => {
     setShowModal(true);
   };
 
+  const handleSelectTemplate = (template) => {
+    setTemplateData(template);
+    setShowModal(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex flex-col font-sans selection:bg-orange-500/30">
       <Header
@@ -286,17 +295,28 @@ export const DashboardPage = () => {
             <h2 className="text-3xl font-bold text-white tracking-tight">Your Dashboard</h2>
             <p className="text-slate-400 mt-1">Manage your habits and track your progress</p>
           </div>
-          <Button
-            onClick={() => {
-              setEditingStreak(null);
-              setShowModal(true);
-            }}
-            variant="primary"
-            className="shadow-lg shadow-orange-900/20"
-          >
-            <Plus className="w-5 h-5" />
-            New Streak
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              onClick={() => setShowTemplates(true)}
+              variant="secondary"
+              className="border border-slate-700"
+            >
+              <Sparkles className="w-5 h-5" />
+              Browse Templates
+            </Button>
+            <Button
+              onClick={() => {
+                setEditingStreak(null);
+                setTemplateData(null);
+                setShowModal(true);
+              }}
+              variant="primary"
+              className="shadow-lg shadow-orange-900/20"
+            >
+              <Plus className="w-5 h-5" />
+              New Streak
+            </Button>
+          </div>
         </div>
 
         {/* Loading State */}
@@ -313,16 +333,26 @@ export const DashboardPage = () => {
             title="Start Your Journey"
             description="Create your first streak to unlock the dashboard power!"
             action={
-              <Button
-                onClick={() => {
-                  setEditingStreak(null);
-                  setShowModal(true);
-                }}
-                variant="primary"
-              >
-                <Plus className="w-5 h-5" />
-                Create First Streak
-              </Button>
+              <div className="flex gap-3 justify-center">
+                <Button
+                  onClick={() => setShowTemplates(true)}
+                  variant="secondary"
+                >
+                  <Sparkles className="w-5 h-5" />
+                  Browse Templates
+                </Button>
+                <Button
+                  onClick={() => {
+                    setEditingStreak(null);
+                    setTemplateData(null);
+                    setShowModal(true);
+                  }}
+                  variant="primary"
+                >
+                  <Plus className="w-5 h-5" />
+                  Create Custom
+                </Button>
+              </div>
             }
           />
         )}
@@ -393,11 +423,23 @@ export const DashboardPage = () => {
         onClose={() => {
           setShowModal(false);
           setEditingStreak(null);
+          setTemplateData(null);
         }}
         onSubmit={editingStreak ? handleUpdateStreak : handleCreateStreak}
         streak={editingStreak}
+        template={templateData}
         loading={modalLoading}
       />
+
+      {/* Habit Templates Library Modal */}
+      <AnimatePresence>
+        {showTemplates && (
+          <HabitTemplatesLibrary
+            onSelectTemplate={handleSelectTemplate}
+            onClose={() => setShowTemplates(false)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 };

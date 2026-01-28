@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Modal, Button, Input, Select, Badge } from './common';
 import { STREAK_CATEGORIES, FREQUENCIES, EMOJI_ICONS } from '../utils/streakUtils';
 
-export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, loading = false }) => {
+export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, template = null, loading = false }) => {
   const [formData, setFormData] = useState({
     name: '',
     icon: '🔥',
@@ -17,6 +17,7 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
 
   useEffect(() => {
     if (streak) {
+      // Editing existing streak
       setFormData({
         name: streak.name,
         icon: streak.emoji,
@@ -25,7 +26,18 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
         reminderTime: streak.reminderTime || '09:00',
         targetCount: streak.targetCount || 30,
       });
+    } else if (template) {
+      // Creating from template
+      setFormData({
+        name: template.name,
+        icon: template.icon,
+        category: template.category,
+        frequency: template.frequency,
+        reminderTime: template.reminderTime,
+        targetCount: template.targetCount,
+      });
     } else {
+      // Creating new streak
       setFormData({
         name: '',
         icon: '🔥',
@@ -36,7 +48,7 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
       });
     }
     setErrors({});
-  }, [streak, isOpen]);
+  }, [streak, template, isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -81,7 +93,7 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={streak ? 'Edit Streak' : 'Create New Streak'}
+      title={streak ? 'Edit Streak' : template ? `Use Template: ${template.name}` : 'Create New Streak'}
       actions={
         <>
           <Button variant="secondary" onClick={onClose} disabled={loading}>
@@ -99,6 +111,16 @@ export const StreakFormModal = ({ isOpen, onClose, onSubmit, streak = null, load
       }
     >
       <div className="space-y-4">
+        {/* Template info badge */}
+        {template && (
+          <div className="p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg flex items-center gap-2">
+            <span className="text-2xl">{template.icon}</span>
+            <div>
+              <p className="text-sm font-bold text-blue-300">{template.name} Template</p>
+              <p className="text-xs text-blue-300/70">{template.description}</p>
+            </div>
+          </div>
+        )}
         {/* Streak name */}
         <Input
           label="Streak Name"
