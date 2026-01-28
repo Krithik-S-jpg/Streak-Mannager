@@ -12,6 +12,8 @@ const subscribeToStreaks = (userId, callback) => {
     return () => {};
   }
 
+  console.log('Subscribing to streaks for user:', userId);
+
   const subscription = supabase
     .channel(`streaks:${userId}`)
     .on(
@@ -22,12 +24,20 @@ const subscribeToStreaks = (userId, callback) => {
         table: 'streaks',
         filter: `user_id=eq.${userId}`,
       },
-      () => fetchStreaks(userId, callback)
+      (payload) => {
+        console.log('Streak change detected:', payload);
+        fetchStreaks(userId, callback);
+      }
     )
-    .subscribe();
+    .subscribe((status) => {
+      console.log('Subscription status:', status);
+    });
 
   fetchStreaks(userId, callback);
-  return () => supabase.removeChannel(subscription);
+  return () => {
+    console.log('Unsubscribing from streaks');
+    supabase.removeChannel(subscription);
+  };
 };
 
 const fetchStreaks = async (userId, callback) => {

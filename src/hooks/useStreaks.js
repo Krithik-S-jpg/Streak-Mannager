@@ -32,13 +32,18 @@ export const useStreaks = (userId) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         setError(null);
-        const id = await streakService.createStreak(userId, streakData);
-        // Force refetch streaks to update UI immediately
-        const unsubscribe = streakService.subscribeToStreaks(userId, (data) => {
-          setStreaks(data);
-          if (unsubscribe) unsubscribe(); // Unsubscribe after one update
+        await streakService.createStreak(userId, streakData);
+        
+        // Wait a moment for Supabase to process the insert
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Manually fetch to force immediate UI update
+        await new Promise((resolve) => {
+          streakService.fetchStreaks(userId, (data) => {
+            setStreaks(data);
+            resolve(data);
+          });
         });
-        return id;
       } catch (err) {
         setError(err.message);
         throw err;
