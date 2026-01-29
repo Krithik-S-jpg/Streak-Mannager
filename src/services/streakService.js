@@ -230,7 +230,12 @@ const checkInStreak = async (userId, streakId) => {
       .eq('user_id', userId)
       .single();
 
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      console.error('❌ Error fetching streak for check-in:', fetchError);
+      throw fetchError;
+    }
+
+    console.log('📊 Current streak data:', streak);
 
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -244,6 +249,13 @@ const checkInStreak = async (userId, streakId) => {
     const newBestCount = Math.max(newCount, streak.longest_streak || 0);
     const checkIns = Array.isArray(streak.check_ins) ? streak.check_ins : [];
 
+    console.log('📝 Updating with:', {
+      current_streak: newCount,
+      longest_streak: newBestCount,
+      check_ins_count: checkIns.length + 1,
+      today: today,
+    });
+
     const { data, error } = await supabase
       .from('streaks')
       .update({
@@ -253,13 +265,19 @@ const checkInStreak = async (userId, streakId) => {
         last_check_in: now.toISOString(),
       })
       .eq('id', streakId)
+      .eq('user_id', userId)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error updating streak:', error);
+      throw error;
+    }
+    
+    console.log('✅ Streak updated successfully:', data);
     return data;
   } catch (error) {
-    console.error('Error checking in:', error);
+    console.error('❌ Error checking in:', error);
     throw error;
   }
 };
@@ -383,6 +401,8 @@ const unarchiveStreak = async (userId, streakId) => {
 
 const freezeStreak = async (userId, streakId) => {
   try {
+    console.log('❄️ Attempting to freeze streak:', streakId);
+    
     if (DEMO_MODE) {
       // Demo mode - update in localStorage
       const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
@@ -405,26 +425,40 @@ const freezeStreak = async (userId, streakId) => {
       .eq('user_id', userId)
       .single();
 
-    if (fetchError) throw fetchError;
+    if (fetchError) {
+      console.error('❌ Error fetching freeze data:', fetchError);
+      throw fetchError;
+    }
+    
+    console.log('📊 Current freezes left:', streak.freezes_left);
+    
     if ((streak.freezes_left || 0) <= 0) throw new Error('No freezes left!');
 
     const { data, error } = await supabase
       .from('streaks')
       .update({ freezes_left: (streak.freezes_left || 3) - 1 })
       .eq('id', streakId)
+      .eq('user_id', userId)
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error applying freeze:', error);
+      throw error;
+    }
+    
+    console.log('✅ Freeze applied successfully:', data);
     return data;
   } catch (error) {
-    console.error('Error freezing streak:', error);
+    console.error('❌ Error freezing streak:', error);
     throw error;
   }
 };
 
 const recoverStreak = async (userId, streakId) => {
   try {
+    console.log('🔄 Attempting to recover streak:', streakId);
+    
     const { data, error } = await supabase
       .from('streaks')
       .update({ current_streak: 0, freezes_left: 3 })
@@ -433,10 +467,15 @@ const recoverStreak = async (userId, streakId) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error recovering streak:', error);
+      throw error;
+    }
+    
+    console.log('✅ Streak recovered successfully:', data);
     return data;
   } catch (error) {
-    console.error('Error recovering streak:', error);
+    console.error('❌ Error recovering streak:', error);
     throw error;
   }
 };
