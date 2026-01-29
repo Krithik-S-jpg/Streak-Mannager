@@ -48,10 +48,10 @@ export const StreakCard = ({
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between mb-6 relative z-10">
-        <div className="flex items-center gap-4">
-          <div className="relative">
-             <span className="text-4xl filter drop-shadow-lg">{streak.emoji || '🔥'}</span>
+      <div className="flex items-start justify-between mb-4 sm:mb-6 relative z-10 gap-2">
+        <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+          <div className="relative flex-shrink-0">
+             <span className="text-3xl sm:text-4xl filter drop-shadow-lg">{streak.emoji || '🔥'}</span>
              {checkedInToday && (
                <motion.div
                  initial={{ scale: 0 }}
@@ -62,11 +62,11 @@ export const StreakCard = ({
                </motion.div>
              )}
           </div>
-          <div>
-            <h3 className="text-xl font-bold text-slate-100 tracking-tight group-hover:text-orange-100 transition-colors">
+          <div className="min-w-0 flex-1">
+            <h3 className="text-base sm:text-xl font-bold text-slate-100 tracking-tight group-hover:text-orange-100 transition-colors truncate">
               {streak.name}
             </h3>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1 flex-wrap">
                <Badge variant="outline" className="text-[10px] uppercase tracking-wider border-slate-600 text-slate-400">
                  {streak.category}
                </Badge>

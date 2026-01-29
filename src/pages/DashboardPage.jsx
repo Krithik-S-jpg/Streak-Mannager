@@ -242,7 +242,7 @@ export const DashboardPage = () => {
         totalCheckIns={totalCheckIns}
       />
 
-      <main className="flex-1 max-w-7xl mx-auto w-full px-4 py-8">
+      <main className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-4 py-4 sm:py-8">
         {/* Messages Toast */}
         <AnimatePresence>
           {message && (
@@ -257,30 +257,30 @@ export const DashboardPage = () => {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="mb-8 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl p-8 border border-slate-700/30 shadow-2xl backdrop-blur-md relative overflow-hidden"
+            className="mb-6 sm:mb-8 bg-gradient-to-br from-slate-900/60 via-slate-800/40 to-slate-900/60 rounded-2xl p-4 sm:p-8 border border-slate-700/30 shadow-2xl backdrop-blur-md relative overflow-hidden"
           >
              <div className="absolute top-0 right-0 w-80 h-80 bg-orange-500/10 blur-3xl rounded-full pointer-events-none -translate-y-1/2 translate-x-1/2" />
 
-             <div className="flex flex-col md:flex-row items-center justify-between gap-6 relative z-10">
-                <div>
-                   <h2 className="text-2xl font-bold text-white mb-2">
+             <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 relative z-10">
+                <div className="text-center md:text-left w-full">
+                   <h2 className="text-xl sm:text-2xl font-bold text-white mb-2">
                      {dailyProgress === 100 ? 'All Done for Today! 🎉' : `You're crushing it, ${user?.displayName || 'Legend'}!`}
                    </h2>
-                   <p className="text-slate-400">
+                   <p className="text-sm sm:text-base text-slate-400">
                      You've checked in <span className="text-white font-bold">{checkedInTodayCount}</span> of <span className="text-white font-bold">{totalStreaks}</span> streaks today.
                    </p>
                 </div>
 
                 {/* Daily Progress Circle */}
-                <div className="flex items-center gap-4 bg-slate-950/50 p-4 rounded-xl border border-slate-800">
-                   <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="flex items-center gap-3 sm:gap-4 bg-slate-950/50 p-3 sm:p-4 rounded-xl border border-slate-800 flex-shrink-0">
+                   <div className="relative w-14 h-14 sm:w-16 sm:h-16 flex items-center justify-center">
                       <svg className="w-full h-full -rotate-90">
                         <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="none" className="text-slate-800" />
                         <circle cx="32" cy="32" r="28" stroke="currentColor" strokeWidth="4" fill="none" className="text-orange-500 transition-all duration-1000" strokeDasharray="175.9" strokeDashoffset={175.9 - (175.9 * dailyProgress) / 100} />
                       </svg>
-                      <span className="absolute text-sm font-bold text-white">{Math.round(dailyProgress)}%</span>
+                      <span className="absolute text-xs sm:text-sm font-bold text-white">{Math.round(dailyProgress)}%</span>
                    </div>
-                   <div className="text-sm">
+                   <div className="text-xs sm:text-sm">
                       <p className="text-slate-400">Daily Goal</p>
                       <p className="text-white font-bold">{totalStreaks - checkedInTodayCount} left</p>
                    </div>
@@ -290,19 +290,20 @@ export const DashboardPage = () => {
         )}
 
         {/* Action Bar */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-3xl font-bold text-white tracking-tight">Your Dashboard</h2>
-            <p className="text-slate-400 mt-1">Manage your habits and track your progress</p>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-6 sm:mb-8">
+          <div className="min-w-0">
+            <h2 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">Your Dashboard</h2>
+            <p className="text-sm sm:text-base text-slate-400 mt-1">Manage your habits and track your progress</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
             <Button
               onClick={() => setShowTemplates(true)}
               variant="secondary"
-              className="border border-slate-700"
+              className="border border-slate-700 text-sm sm:text-base"
             >
-              <Sparkles className="w-5 h-5" />
-              Browse Templates
+              <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
+              <span className="hidden sm:inline">Browse Templates</span>
+              <span className="sm:hidden">Templates</span>
             </Button>
             <Button
               onClick={() => {
@@ -311,17 +312,18 @@ export const DashboardPage = () => {
                 setShowModal(true);
               }}
               variant="primary"
-              className="shadow-lg shadow-orange-900/20"
+              className="shadow-lg shadow-orange-900/20 text-sm sm:text-base"
             >
-              <Plus className="w-5 h-5" />
-              New Streak
+              <Plus className="w-4 sm:w-5 h-4 sm:h-5" />
+              <span className="hidden sm:inline">New Streak</span>
+              <span className="sm:hidden">New</span>
             </Button>
           </div>
         </div>
 
         {/* Loading State */}
         {loading && (
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
              <SkeletonLoader count={1} className="h-64" />
              <SkeletonLoader count={1} className="h-64" />
           </div>
@@ -333,13 +335,14 @@ export const DashboardPage = () => {
             title="Start Your Journey"
             description="Create your first streak to unlock the dashboard power!"
             action={
-              <div className="flex gap-3 justify-center">
+              <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 justify-center w-full max-w-xs mx-auto">
                 <Button
                   onClick={() => setShowTemplates(true)}
                   variant="secondary"
+                  className="flex-1"
                 >
-                  <Sparkles className="w-5 h-5" />
-                  Browse Templates
+                  <Sparkles className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <span className="hidden sm:inline">Browse</span>
                 </Button>
                 <Button
                   onClick={() => {
@@ -348,9 +351,10 @@ export const DashboardPage = () => {
                     setShowModal(true);
                   }}
                   variant="primary"
+                  className="flex-1"
                 >
-                  <Plus className="w-5 h-5" />
-                  Create Custom
+                  <Plus className="w-4 sm:w-5 h-4 sm:h-5" />
+                  <span className="hidden sm:inline">Create</span>
                 </Button>
               </div>
             }
@@ -359,7 +363,7 @@ export const DashboardPage = () => {
 
         {/* Streaks Grid */}
         {!loading && streaks.length > 0 && (
-          <div className="space-y-8">
+          <div className="space-y-6 sm:space-y-8">
             {/* Analytics Dashboard */}
             <AnalyticsDashboard streaks={streaks} />
 
@@ -375,7 +379,7 @@ export const DashboardPage = () => {
 
             {/* Streaks Grid */}
             {filteredAndSortedStreaks.length > 0 ? (
-              <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
                 {filteredAndSortedStreaks.map((streak) => (
                   <StreakCard
                     key={streak.id}

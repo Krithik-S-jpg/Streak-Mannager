@@ -28,21 +28,21 @@ export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
 
   return (
     <header className="bg-gradient-to-b from-slate-900/80 to-slate-950 backdrop-blur-xl border-b border-slate-800/50 sticky top-0 z-30 shadow-xl">
-      <div className="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3 sm:py-4 flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-4">
         {/* Logo */}
         <motion.div
           initial={{ opacity: 0, x: -20 }}
           animate={{ opacity: 1, x: 0 }}
-          className="flex items-center gap-2"
+          className="flex items-center gap-2 min-w-0"
         >
-          <span className="text-3xl filter drop-shadow-[0_0_10px_rgba(251,146,60,0.5)]">🔥</span>
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600">
+          <span className="text-2xl sm:text-3xl filter drop-shadow-[0_0_10px_rgba(251,146,60,0.5)] flex-shrink-0">🔥</span>
+          <h1 className="text-lg sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-orange-400 to-red-600 truncate">
             Streak Maintainer
           </h1>
         </motion.div>
 
         {/* Level & Actions */}
-        <div className="flex items-center gap-6 w-full sm:w-auto justify-between sm:justify-end">
+        <div className="flex items-center gap-2 sm:gap-6 w-full sm:w-auto justify-between sm:justify-end flex-shrink-0">
           {user && (
             <>
               {/* Level Progress */}
