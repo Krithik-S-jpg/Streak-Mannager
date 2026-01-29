@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, User, Bell } from 'lucide-react';
+import { LogOut, Settings, User, Bell, Wifi, WifiOff } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { notificationService } from '../services/notificationService';
 import { calculateLevel, getNextLevelThreshold } from '../utils/streakUtils';
@@ -9,6 +9,17 @@ import { calculateLevel, getNextLevelThreshold } from '../utils/streakUtils';
 export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [realtimeStatus, setRealtimeStatus] = useState('checking');
+
+  useEffect(() => {
+    // Listen for realtime status updates
+    const handleStatusChange = (event) => {
+      setRealtimeStatus(event.detail.status);
+    };
+    
+    window.addEventListener('realtime:status', handleStatusChange);
+    return () => window.removeEventListener('realtime:status', handleStatusChange);
+  }, []);
 
   const currentLevelInfo = calculateLevel(totalCheckIns);
   const nextLevelMin = getNextLevelThreshold(currentLevelInfo.level);
@@ -95,6 +106,17 @@ export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
                     {totalCheckIns} / {nextLevelMin || '∞'} XP
                   </div>
                 </div>
+              </div>
+
+              {/* Realtime Status Indicator */}
+              <div className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs font-semibold transition-colors ${
+                realtimeStatus === 'subscribed' ? 'bg-green-500/20 text-green-400' :
+                realtimeStatus === 'polling' ? 'bg-yellow-500/20 text-yellow-400' :
+                realtimeStatus === 'error' ? 'bg-red-500/20 text-red-400' :
+                'bg-slate-700/50 text-slate-400'
+              }`} title={`Realtime Status: ${realtimeStatus}`}>
+                {realtimeStatus === 'subscribed' ? <Wifi size={12} /> : <WifiOff size={12} />}
+                <span className="hidden sm:inline">{realtimeStatus}</span>
               </div>
 
               {/* User Actions */}

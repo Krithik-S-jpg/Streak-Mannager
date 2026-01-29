@@ -43,6 +43,7 @@ const subscribeToStreaks = (userId, callback) => {
           console.log(`📡 Realtime subscription status: ${status}`);
           if (status === 'SUBSCRIBED') {
             reconnectAttempts = 0; // Reset on successful connection
+            window.dispatchEvent(new CustomEvent('realtime:status', { detail: { status: 'subscribed' } }));
           } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
             console.warn('⚠️ Realtime connection lost, retrying...');
             if (reconnectAttempts < maxReconnectAttempts) {
@@ -53,12 +54,14 @@ const subscribeToStreaks = (userId, callback) => {
               }, 2000 * reconnectAttempts); // Exponential backoff
             } else {
               console.warn('❌ Max reconnection attempts reached, falling back to polling');
+              window.dispatchEvent(new CustomEvent('realtime:status', { detail: { status: 'polling' } }));
               startPolling();
             }
           }
         });
     } catch (err) {
       console.error('Error setting up subscription:', err);
+      window.dispatchEvent(new CustomEvent('realtime:status', { detail: { status: 'error' } }));
       startPolling();
     }
   };
@@ -68,11 +71,15 @@ const subscribeToStreaks = (userId, callback) => {
   const startPolling = () => {
     if (pollingInterval) clearInterval(pollingInterval);
     
-    console.log('🔄 Starting fallback polling every 5 seconds');
+    // Use shorter polling interval on mobile
+    const isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
+    const pollInterval = isMobile ? 3000 : 5000; // 3s on mobile, 5s on desktop
+    
+    console.log(`🔄 Starting fallback polling every ${pollInterval}ms (mobile: ${isMobile})`);
     pollingInterval = setInterval(() => {
       console.log('⏲️ Polling for updates...');
       fetchStreaks(userId, callback);
-    }, 5000); // Poll every 5 seconds
+    }, pollInterval);
   };
 
   setupSubscription();
