@@ -58,6 +58,17 @@ export const useStreaks = (userId) => {
       try {
         setError(null);
         await streakService.updateStreak(userId, streakId, updates);
+        
+        // Wait a moment for Supabase to process
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Manually fetch to force immediate UI update
+        await new Promise((resolve) => {
+          streakService.fetchStreaks(userId, (data) => {
+            setStreaks(data);
+            resolve(data);
+          });
+        });
       } catch (err) {
         setError(err.message);
         throw err;
@@ -97,6 +108,17 @@ export const useStreaks = (userId) => {
       try {
         setError(null);
         await streakService.checkInToday(userId, streakId);
+        
+        // Wait a moment for Supabase to process
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Manually fetch to force immediate UI update
+        await new Promise((resolve) => {
+          streakService.fetchStreaks(userId, (data) => {
+            setStreaks(data);
+            resolve(data);
+          });
+        });
       } catch (err) {
         setError(err.message);
         throw err;
@@ -111,6 +133,17 @@ export const useStreaks = (userId) => {
       try {
         setError(null);
         await streakService.useFreeze(userId, streakId);
+        
+        // Wait a moment for Supabase to process
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Manually fetch to force immediate UI update
+        await new Promise((resolve) => {
+          streakService.fetchStreaks(userId, (data) => {
+            setStreaks(data);
+            resolve(data);
+          });
+        });
       } catch (err) {
         setError(err.message);
         throw err;
@@ -125,6 +158,17 @@ export const useStreaks = (userId) => {
       try {
         setError(null);
         await streakService.recoverStreak(userId, streakId);
+        
+        // Wait a moment for Supabase to process
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Manually fetch to force immediate UI update
+        await new Promise((resolve) => {
+          streakService.fetchStreaks(userId, (data) => {
+            setStreaks(data);
+            resolve(data);
+          });
+        });
       } catch (err) {
         setError(err.message);
         throw err;
