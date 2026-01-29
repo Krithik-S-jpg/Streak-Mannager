@@ -12,31 +12,80 @@ const subscribeToStreaks = (userId, callback) => {
     return () => {};
   }
 
-  console.log('Subscribing to streaks for user:', userId);
+  console.log('📡 Subscribing to streaks for user:', userId);
 
-  const subscription = supabase
-    .channel(`streaks:${userId}`)
-    .on(
-      'postgres_changes',
-      {
-        event: '*',
-        schema: 'public',
-        table: 'streaks',
-        filter: `user_id=eq.${userId}`,
-      },
-      (payload) => {
-        console.log('Streak change detected:', payload);
-        fetchStreaks(userId, callback);
-      }
-    )
-    .subscribe((status) => {
-      console.log('Subscription status:', status);
-    });
-
+  // Initial fetch
   fetchStreaks(userId, callback);
+
+  // Set up real-time subscription
+  let subscription = null;
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 5;
+
+  const setupSubscription = () => {
+    try {
+      subscription = supabase
+        .channel(`streaks:${userId}`)
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'streaks',
+            filter: `user_id=eq.${userId}`,
+          },
+          (payload) => {
+            console.log('🔄 Real-time streak change detected:', payload.eventType);
+            fetchStreaks(userId, callback);
+          }
+        )
+        .subscribe((status) => {
+          console.log(`📡 Realtime subscription status: ${status}`);
+          if (status === 'SUBSCRIBED') {
+            reconnectAttempts = 0; // Reset on successful connection
+          } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+            console.warn('⚠️ Realtime connection lost, retrying...');
+            if (reconnectAttempts < maxReconnectAttempts) {
+              reconnectAttempts++;
+              setTimeout(() => {
+                console.log(`🔄 Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})`);
+                setupSubscription();
+              }, 2000 * reconnectAttempts); // Exponential backoff
+            } else {
+              console.warn('❌ Max reconnection attempts reached, falling back to polling');
+              startPolling();
+            }
+          }
+        });
+    } catch (err) {
+      console.error('Error setting up subscription:', err);
+      startPolling();
+    }
+  };
+
+  // Fallback polling for mobile/unstable connections
+  let pollingInterval = null;
+  const startPolling = () => {
+    if (pollingInterval) clearInterval(pollingInterval);
+    
+    console.log('🔄 Starting fallback polling every 5 seconds');
+    pollingInterval = setInterval(() => {
+      console.log('⏲️ Polling for updates...');
+      fetchStreaks(userId, callback);
+    }, 5000); // Poll every 5 seconds
+  };
+
+  setupSubscription();
+
+  // Return cleanup function
   return () => {
-    console.log('Unsubscribing from streaks');
-    supabase.removeChannel(subscription);
+    console.log('🛑 Unsubscribing from streaks');
+    if (subscription) {
+      supabase.removeChannel(subscription);
+    }
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+    }
   };
 };
 
@@ -48,13 +97,20 @@ const fetchStreaks = async (userId, callback) => {
       return;
     }
 
+    console.log('📥 Fetching streaks for user:', userId);
+
     const { data, error } = await supabase
       .from('streaks')
       .select('*')
       .eq('user_id', userId)
       .eq('archived', false);
 
-    if (error) throw error;
+    if (error) {
+      console.error('❌ Error fetching streaks:', error);
+      throw error;
+    }
+
+    console.log(`✅ Fetched ${data?.length || 0} streaks`);
 
     const formatted = (data || []).map((s) => ({
       id: s.id,
@@ -76,7 +132,7 @@ const fetchStreaks = async (userId, callback) => {
 
     callback(formatted);
   } catch (error) {
-    console.error('Error fetching streaks:', error);
+    console.error('❌ Error fetching streaks:', error);
     callback([]);
   }
 };

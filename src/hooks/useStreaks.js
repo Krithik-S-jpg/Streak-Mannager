@@ -57,20 +57,25 @@ export const useStreaks = (userId) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         setError(null);
+        console.log('📝 Updating streak:', streakId);
         await streakService.updateStreak(userId, streakId, updates);
+        console.log('📝 Update complete, refreshing...');
         
         // Wait a moment for Supabase to process
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Manually fetch to force immediate UI update
+        console.log('📥 Fetching updated streaks...');
         await new Promise((resolve) => {
           streakService.fetchStreaks(userId, (data) => {
+            console.log('✅ UI Updated with changes applied');
             setStreaks(data);
             resolve(data);
           });
         });
       } catch (err) {
         setError(err.message);
+        console.error('❌ Update error:', err);
         throw err;
       }
     },
@@ -107,20 +112,25 @@ export const useStreaks = (userId) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         setError(null);
+        console.log('✓ Checking in to streak:', streakId);
         await streakService.checkInToday(userId, streakId);
+        console.log('✓ Check-in complete, refreshing...');
         
         // Wait a moment for Supabase to process
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Manually fetch to force immediate UI update
+        console.log('📥 Fetching updated streaks...');
         await new Promise((resolve) => {
           streakService.fetchStreaks(userId, (data) => {
+            console.log('✅ UI Updated:', data);
             setStreaks(data);
             resolve(data);
           });
         });
       } catch (err) {
         setError(err.message);
+        console.error('❌ Check-in error:', err);
         throw err;
       }
     },
@@ -132,20 +142,25 @@ export const useStreaks = (userId) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         setError(null);
+        console.log('❄️ Using freeze on streak:', streakId);
         await streakService.useFreeze(userId, streakId);
+        console.log('❄️ Freeze applied, refreshing...');
         
         // Wait a moment for Supabase to process
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Manually fetch to force immediate UI update
+        console.log('📥 Fetching updated streaks...');
         await new Promise((resolve) => {
           streakService.fetchStreaks(userId, (data) => {
+            console.log('✅ UI Updated with freeze applied');
             setStreaks(data);
             resolve(data);
           });
         });
       } catch (err) {
         setError(err.message);
+        console.error('❌ Freeze error:', err);
         throw err;
       }
     },
@@ -157,20 +172,25 @@ export const useStreaks = (userId) => {
       if (!userId) throw new Error('User not authenticated');
       try {
         setError(null);
+        console.log('🔄 Recovering streak:', streakId);
         await streakService.recoverStreak(userId, streakId);
+        console.log('🔄 Recovery applied, refreshing...');
         
         // Wait a moment for Supabase to process
-        await new Promise(resolve => setTimeout(resolve, 300));
+        await new Promise(resolve => setTimeout(resolve, 500));
         
         // Manually fetch to force immediate UI update
+        console.log('📥 Fetching updated streaks...');
         await new Promise((resolve) => {
           streakService.fetchStreaks(userId, (data) => {
+            console.log('✅ UI Updated with recovery applied');
             setStreaks(data);
             resolve(data);
           });
         });
       } catch (err) {
         setError(err.message);
+        console.error('❌ Recovery error:', err);
         throw err;
       }
     },
