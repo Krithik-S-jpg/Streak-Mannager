@@ -94,12 +94,17 @@ export const DashboardPage = () => {
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.ready
-        .then(() => console.log('Service Worker ready'))
+        .then(() => console.log('✅ Service Worker ready'))
         .catch((err) => console.log('Service Worker not ready:', err));
     }
 
+    // Request notification permission with better logging
     notificationService.requestNotificationPermission().then((granted) => {
-      if (granted) console.log('Notifications enabled');
+      if (granted) {
+        console.log('✅ Notifications enabled - you will receive check-in reminders!');
+      } else {
+        console.log('⚠️ Notifications disabled - enable in browser settings to receive reminders');
+      }
     });
   }, []);
 

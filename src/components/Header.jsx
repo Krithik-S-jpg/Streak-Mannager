@@ -1,8 +1,9 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, User } from 'lucide-react';
+import { LogOut, Settings, User, Bell } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { notificationService } from '../services/notificationService';
 import { calculateLevel, getNextLevelThreshold } from '../utils/streakUtils';
 
 export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
@@ -23,6 +24,37 @@ export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
       } catch (err) {
         console.error('Logout error:', err);
       }
+    }
+  };
+
+  const testNotification = async () => {
+    console.log('🧪 Testing notification...');
+    console.log('Permission:', Notification.permission);
+    
+    if (Notification.permission === 'denied') {
+      alert('⚠️ Notifications are blocked. Enable notifications in browser settings.');
+      return;
+    }
+
+    if (Notification.permission !== 'granted') {
+      alert('🔔 Requesting notification permission...');
+      const result = await notificationService.requestNotificationPermission();
+      console.log('Permission result:', result);
+      if (!result) {
+        alert('❌ Notification permission denied');
+        return;
+      }
+    }
+
+    try {
+      await notificationService.showNotification('🎉 Test Notification!', {
+        body: 'If you see this, notifications are working! 🔥',
+        tag: 'test-notification',
+      });
+      console.log('✅ Test notification sent');
+    } catch (err) {
+      console.error('❌ Failed to send test notification:', err);
+      alert('❌ Failed to send notification: ' + err.message);
     }
   };
 
@@ -72,6 +104,15 @@ export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
                       {user.displayName ? user.displayName[0].toUpperCase() : <User size={16} />}
                    </div>
                 </div>
+
+                {/* Test Notification Button */}
+                <button
+                  onClick={testNotification}
+                  className="p-2 text-slate-400 hover:text-blue-400 hover:bg-blue-950/30 rounded-lg transition-colors"
+                  title="Test Notification"
+                >
+                  <Bell className="w-5 h-5" />
+                </button>
 
                 <button
                   onClick={() => navigate('/settings')}

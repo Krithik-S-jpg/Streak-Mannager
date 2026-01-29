@@ -1,9 +1,24 @@
 ﻿const requestNotificationPermission = async () => {
-  if (!('Notification' in window)) return false;
-  if (Notification.permission === 'granted') return true;
+  if (!('Notification' in window)) {
+    console.log('Notifications not supported');
+    return false;
+  }
+
+  if (Notification.permission === 'granted') {
+    console.log('✅ Notification permission already granted');
+    return true;
+  }
+
+  if (Notification.permission === 'denied') {
+    console.log('❌ Notification permission denied - user must enable in browser settings');
+    return false;
+  }
+
   if (Notification.permission !== 'denied') {
     try {
+      console.log('🔔 Requesting notification permission...');
       const permission = await Notification.requestPermission();
+      console.log('Permission result:', permission);
       return permission === 'granted';
     } catch (error) {
       console.error('Error requesting notification permission:', error);
@@ -15,29 +30,47 @@
 
 const showNotification = async (title, options = {}) => {
   try {
+    console.log('📢 Attempting to show notification:', title);
+    console.log('Permission status:', Notification.permission);
+
     // Try to show via service worker (better for mobile)
-    if ('serviceWorker' in navigator && 'registration' in navigator.serviceWorker) {
-      const registration = await navigator.serviceWorker.ready;
-      if (registration.showNotification) {
+    if ('serviceWorker' in navigator) {
+      try {
+        const registration = await navigator.serviceWorker.ready;
+        console.log('✅ Service Worker ready, showing notification via SW');
         registration.showNotification(title, {
           icon: '/favicon.svg',
-          badge: '/favicon.svg',
+          badge: '🔥',
           tag: options.tag || 'streak-notification',
           requireInteraction: false,
           vibrate: [200, 100, 200],
           ...options,
         });
         return;
+      } catch (swError) {
+        console.log('⚠️ Service Worker notification failed:', swError.message);
       }
     }
     
     // Fallback to Notification API
     if ('Notification' in window && Notification.permission === 'granted') {
+      console.log('✅ Showing notification via Notification API');
       new Notification(title, {
         icon: '/favicon.svg',
+        badge: '🔥',
+        tag: options.tag || 'streak-notification',
+        vibrate: [200, 100, 200],
         ...options,
       });
+      return;
     }
+
+    if (Notification.permission === 'denied') {
+      console.log('❌ Notification permission denied');
+      return;
+    }
+
+    console.log('⚠️ Could not show notification - permission not granted');
   } catch (error) {
     console.error('Error showing notification:', error);
   }
