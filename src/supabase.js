@@ -1,29 +1,34 @@
 import { createClient } from '@supabase/supabase-js';
 
-// Initialize Supabase client
+// Initialize Supabase client - detects demo mode automatically
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.warn(
-    'Supabase environment variables not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your .env file'
-  );
+let supabase = null;
+
+if (supabaseUrl && supabaseKey) {
+  console.log('📡 Supabase configured - initializing connection');
+  supabase = createClient(supabaseUrl, supabaseKey);
+} else {
+  console.log('🔴 Demo Mode Active - No Supabase credentials found. Using localStorage only.');
 }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
-
-// Helper to get the current user
+// Helper to get the current user (handles null supabase gracefully)
 export const getCurrentUser = async () => {
+  if (!supabase) return null;
   const {
     data: { user },
   } = await supabase.auth.getUser();
   return user;
 };
 
-// Helper to get session
+// Helper to get session (handles null supabase gracefully)
 export const getSession = async () => {
+  if (!supabase) return null;
   const {
     data: { session },
   } = await supabase.auth.getSession();
   return session;
 };
+
+export { supabase };

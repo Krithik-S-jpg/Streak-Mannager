@@ -1,18 +1,30 @@
 import React, { useEffect } from 'react';
 import { Router } from './Router';
 import { PWABanner } from '../components/PWABanner';
+import { ThemeProvider, useTheme } from '../context/ThemeContext';
+import { ToastContainer } from '../components/Toast';
 
-export const App = () => {
-  useEffect(() => {
-    // Set dark mode
-    document.documentElement.classList.add('dark');
-  }, []);
+const AppContent = () => {
+  const { theme } = useTheme();
+
+  const bgClass = theme === 'dark' 
+    ? 'bg-slate-950 text-slate-100 dark' 
+    : 'bg-white text-slate-900 light';
 
   return (
-    <div className="bg-slate-950 text-slate-100 min-h-screen">
+    <div className={`${bgClass} min-h-screen transition-colors duration-300`}>
       <PWABanner />
       <Router />
+      <ToastContainer />
     </div>
+  );
+};
+
+export const App = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 };
 

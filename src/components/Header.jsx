@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import { LogOut, Settings, User, Bell, Wifi, WifiOff } from 'lucide-react';
+import { LogOut, Settings, User, Bell, Wifi, WifiOff, Moon, Sun } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useTheme } from '../context/ThemeContext';
 import { notificationService } from '../services/notificationService';
 import { calculateLevel, getNextLevelThreshold } from '../utils/streakUtils';
 
 export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
   const [realtimeStatus, setRealtimeStatus] = useState('checking');
 
   useEffect(() => {
@@ -126,6 +128,15 @@ export const Header = ({ onSettingsClick, totalCheckIns = 0 }) => {
                       {user.displayName ? user.displayName[0].toUpperCase() : <User size={16} />}
                    </div>
                 </div>
+
+                {/* Theme Toggle Button */}
+                <button
+                  onClick={toggleTheme}
+                  className="p-2 text-slate-400 hover:text-yellow-400 hover:bg-slate-800 rounded-lg transition-colors"
+                  title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+                >
+                  {theme === 'dark' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+                </button>
 
                 {/* Test Notification Button */}
                 <button

@@ -1,12 +1,63 @@
 import { supabase } from '../supabase';
 import { detectStreakReset, hasCheckedInToday } from '../utils/streakUtils';
+import { parseError, ErrorCodes, AppError } from '../utils/errorHandler';
 
-// Force Supabase mode - disable demo mode
-const DEMO_MODE = false;
+// Enable demo mode if no Supabase connection
+let DEMO_MODE = !supabase;
+
+console.log(DEMO_MODE ? '🔴 Demo Mode Active' : '📡 Supabase Mode Active');
+
+// Test Supabase connection on startup with timeout (skip if already in demo mode)
+const testSupabaseConnection = async () => {
+  if (DEMO_MODE) {
+    console.log('⏭️  Skipping Supabase test - already in demo mode');
+    return false;
+  }
+
+  return new Promise((resolve) => {
+    // Set timeout to prevent hanging
+    const timeout = setTimeout(() => {
+      console.warn('⚠️ Supabase connection test timeout, falling back to demo mode');
+      DEMO_MODE = true;
+      resolve(false);
+    }, 3000);
+
+    try {
+      supabase
+        .from('streaks')
+        .select('count', { count: 'exact' })
+        .limit(1)
+        .then(({ error }) => {
+          clearTimeout(timeout);
+          if (error) {
+            console.warn('⚠️ Supabase connection failed, falling back to demo mode:', error.message);
+            DEMO_MODE = true;
+            resolve(false);
+          } else {
+            console.log('✅ Supabase connection successful');
+            DEMO_MODE = false;
+            resolve(true);
+          }
+        })
+        .catch((e) => {
+          clearTimeout(timeout);
+          console.warn('⚠️ Supabase error, using demo mode:', e.message);
+          DEMO_MODE = true;
+          resolve(false);
+        });
+    } catch (e) {
+      clearTimeout(timeout);
+      console.warn('⚠️ Supabase initialization error, using demo mode:', e.message);
+      DEMO_MODE = true;
+      resolve(false);
+    }
+  });
+};
+
+testSupabaseConnection();
 
 const subscribeToStreaks = (userId, callback) => {
   if (DEMO_MODE) {
-    // Demo mode - use localStorage
     const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
     callback(streaks);
     return () => {};
@@ -14,18 +65,22 @@ const subscribeToStreaks = (userId, callback) => {
 
   console.log('📡 Subscribing to streaks for user:', userId);
 
-  // Initial fetch
-  fetchStreaks(userId, callback);
+  fetchStreaks(userId, callback).catch(error => {
+    console.error('❌ Initial fetch failed:', error);
+    callback([]);
+  });
 
-  // Set up real-time subscription
   let subscription = null;
+  let disconnectTimeout = null;
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
 
   const setupSubscription = () => {
     try {
       subscription = supabase
-        .channel(`streaks:${userId}`)
+        .channel(`streaks:${userId}:${Date.now()}`, {
+          config: { broadcast: { self: true } }
+        })
         .on(
           'postgres_changes',
           {
@@ -36,24 +91,25 @@ const subscribeToStreaks = (userId, callback) => {
           },
           (payload) => {
             console.log('🔄 Real-time streak change detected:', payload.eventType);
-            fetchStreaks(userId, callback);
+            clearTimeout(disconnectTimeout);
+            fetchStreaks(userId, callback).catch(console.error);
           }
         )
         .subscribe((status) => {
           console.log(`📡 Realtime subscription status: ${status}`);
           if (status === 'SUBSCRIBED') {
-            reconnectAttempts = 0; // Reset on successful connection
+            reconnectAttempts = 0;
             window.dispatchEvent(new CustomEvent('realtime:status', { detail: { status: 'subscribed' } }));
           } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-            console.warn('⚠️ Realtime connection lost, retrying...');
+            console.warn('⚠️ Realtime connection lost');
             if (reconnectAttempts < maxReconnectAttempts) {
               reconnectAttempts++;
               setTimeout(() => {
-                console.log(`🔄 Attempting to reconnect (${reconnectAttempts}/${maxReconnectAttempts})`);
+                console.log(`🔄 Reconnecting (${reconnectAttempts}/${maxReconnectAttempts})`);
                 setupSubscription();
-              }, 2000 * reconnectAttempts); // Exponential backoff
+              }, 2000 * reconnectAttempts);
             } else {
-              console.warn('❌ Max reconnection attempts reached, falling back to polling');
+              console.warn('❌ Max reconnection attempts reached, using polling');
               window.dispatchEvent(new CustomEvent('realtime:status', { detail: { status: 'polling' } }));
               startPolling();
             }
@@ -61,82 +117,68 @@ const subscribeToStreaks = (userId, callback) => {
         });
     } catch (err) {
       console.error('Error setting up subscription:', err);
-      window.dispatchEvent(new CustomEvent('realtime:status', { detail: { status: 'error' } }));
       startPolling();
     }
   };
 
-  // Fallback polling for mobile/unstable connections
   let pollingInterval = null;
   const startPolling = () => {
     if (pollingInterval) clearInterval(pollingInterval);
-    
-    // Use shorter polling interval on mobile
-    const isMobile = /iPhone|iPad|Android|Mobile/i.test(navigator.userAgent);
-    const pollInterval = isMobile ? 3000 : 5000; // 3s on mobile, 5s on desktop
-    
-    console.log(`🔄 Starting fallback polling every ${pollInterval}ms (mobile: ${isMobile})`);
+    const pollInterval = /Mobile|iPhone|iPad|Android/i.test(navigator.userAgent) ? 4000 : 8000;
+    console.log(`🔄 Starting polling (${pollInterval}ms)`);
     pollingInterval = setInterval(() => {
-      console.log('⏲️ Polling for updates...');
-      fetchStreaks(userId, callback);
+      fetchStreaks(userId, callback).catch(console.error);
     }, pollInterval);
   };
 
+  // Set disconnect timeout (if no update for 45 seconds, try polling)
+  const resetDisconnectTimeout = () => {
+    clearTimeout(disconnectTimeout);
+    disconnectTimeout = setTimeout(() => {
+      console.warn('⚠️ No realtime updates for 45s, checking connection...');
+      if (pollingInterval) return; // Already polling
+      startPolling();
+    }, 45000);
+  };
+  resetDisconnectTimeout();
+
   setupSubscription();
 
-  // Return cleanup function
   return () => {
     console.log('🛑 Unsubscribing from streaks');
     if (subscription) {
       supabase.removeChannel(subscription);
     }
-    if (pollingInterval) {
-      clearInterval(pollingInterval);
-    }
+    if (pollingInterval) clearInterval(pollingInterval);
+    if (disconnectTimeout) clearTimeout(disconnectTimeout);
   };
 };
 
 const fetchStreaks = async (userId, callback) => {
   try {
+    if (!userId) {
+      callback([]);
+      return;
+    }
+
     if (DEMO_MODE) {
       const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
       callback(streaks);
       return;
     }
 
-    console.log('📥 Fetching streaks for user:', userId);
-
     const { data, error } = await supabase
       .from('streaks')
       .select('*')
       .eq('user_id', userId)
-      .eq('archived', false);
+      .eq('archived', false)
+      .order('updated_at', { ascending: false });
 
     if (error) {
-      console.error('❌ Error fetching streaks:', error);
-      throw error;
+      throw parseError(error, 'fetchStreaks');
     }
 
-    console.log(`✅ Fetched ${data?.length || 0} streaks`);
-
-    const formatted = (data || []).map((s) => ({
-      id: s.id,
-      name: s.name,
-      emoji: s.icon,
-      category: s.category,
-      frequency: s.frequency,
-      currentCount: s.current_streak || 0,
-      bestCount: s.longest_streak || 0,
-      lastCheckIn: s.last_check_in ? new Date(s.last_check_in) : null,
-      createdAt: s.created_at ? new Date(s.created_at) : new Date(),
-      checkIns: Array.isArray(s.check_ins) ? s.check_ins : [],
-      freezesLeft: s.freezes_left || 3,
-      targetCount: s.target_count || 30,
-      reminderTime: s.reminder_time || '09:00',
-      goalCount: s.goal_count || 0,
-      archived: s.archived || false,
-    }));
-
+    const formatted = (data || []).map(formatStreakFromDB);
     callback(formatted);
   } catch (error) {
     console.error('❌ Error fetching streaks:', error);
@@ -144,10 +186,37 @@ const fetchStreaks = async (userId, callback) => {
   }
 };
 
+const formatStreakFromDB = (s) => ({
+  id: s.id,
+  name: s.name,
+  emoji: s.icon || '🔥',
+  category: s.category || 'personal',
+  frequency: s.frequency || 'daily',
+  currentCount: s.current_streak || 0,
+  bestCount: s.longest_streak || 0,
+  lastCheckIn: s.last_check_in ? new Date(s.last_check_in) : null,
+  createdAt: s.created_at ? new Date(s.created_at) : new Date(),
+  checkIns: Array.isArray(s.check_ins) ? s.check_ins : [],
+  freezesLeft: s.freezes_left || 3,
+  targetCount: s.target_count || 30,
+  reminderTime: s.reminder_time || '09:00',
+  goalCount: s.goal_count || 0,
+  archived: s.archived || false,
+});
+
 const createStreak = async (userId, streakData) => {
   try {
+    if (!userId) throw new AppError('User not authenticated', ErrorCodes.UNAUTHORIZED);
+    
+    // Validate input
+    if (!streakData.name || streakData.name.trim().length === 0) {
+      throw new AppError('Streak name is required', ErrorCodes.VALIDATION_ERROR);
+    }
+    if (streakData.name.length > 100) {
+      throw new AppError('Streak name must be less than 100 characters', ErrorCodes.VALIDATION_ERROR);
+    }
+
     if (DEMO_MODE) {
-      // Demo mode - create in localStorage
       const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
       const newStreak = {
         id: `streak_${Date.now()}`,
@@ -163,10 +232,10 @@ const createStreak = async (userId, streakData) => {
         freezesLeft: 3,
         lastCheckIn: null,
         createdAt: new Date().toISOString(),
-        notes: '',
       };
       streaks.push(newStreak);
       localStorage.setItem(`streaks_${userId}`, JSON.stringify(streaks));
+      console.log('✅ Streak created (demo):', newStreak);
       return newStreak;
     }
 
@@ -175,7 +244,7 @@ const createStreak = async (userId, streakData) => {
       .insert([
         {
           user_id: userId,
-          name: streakData.name,
+          name: streakData.name.trim(),
           icon: streakData.icon || '🔥',
           category: streakData.category || 'personal',
           frequency: streakData.frequency || 'daily',
@@ -192,41 +261,44 @@ const createStreak = async (userId, streakData) => {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) throw parseError(error, 'createStreak');
     
-    // Trigger a refetch by calling fetchStreaks
-    // This ensures the UI updates immediately
-    return data;
+    console.log('✅ Streak created:', data);
+    return formatStreakFromDB(data);
   } catch (error) {
-    console.error('Error creating streak:', error);
-    throw error;
+    throw error instanceof AppError ? error : parseError(error, 'createStreak');
   }
 };
 
 const checkInStreak = async (userId, streakId) => {
   try {
+    if (!userId) throw new AppError('User not authenticated', ErrorCodes.UNAUTHORIZED);
+    if (!streakId) throw new AppError('Streak ID is required', ErrorCodes.INVALID_INPUT);
+
     if (DEMO_MODE) {
-      // Demo mode - update in localStorage
       const streaks = JSON.parse(localStorage.getItem(`streaks_${userId}`) || '[]');
       const streakIndex = streaks.findIndex(s => s.id === streakId);
-      if (streakIndex === -1) throw new Error('Streak not found');
+      if (streakIndex === -1) {
+        throw new AppError('Streak not found', ErrorCodes.STREAK_NOT_FOUND);
+      }
 
       const streak = streaks[streakIndex];
       const now = new Date();
       const today = now.toISOString().split('T')[0];
 
       if (hasCheckedInToday(streak.checkIns || [], now)) {
-        throw new Error('Already checked in today!');
+        throw new AppError('Already checked in today', ErrorCodes.OPERATION_FAILED);
       }
 
       const newCount = (streak.currentCount || 0) + 1;
-
       streak.currentCount = newCount;
+      streak.bestCount = Math.max(newCount, streak.bestCount || 0);
       streak.checkIns = [...(streak.checkIns || []), today];
       streak.lastCheckIn = now.toISOString();
 
       streaks[streakIndex] = streak;
       localStorage.setItem(`streaks_${userId}`, JSON.stringify(streaks));
+      console.log('✅ Check-in successful (demo):', streak);
       return streak;
     }
 
@@ -237,31 +309,21 @@ const checkInStreak = async (userId, streakId) => {
       .eq('user_id', userId)
       .single();
 
-    if (fetchError) {
-      console.error('❌ Error fetching streak for check-in:', fetchError);
-      throw fetchError;
+    if (fetchError || !streak) {
+      throw new AppError('Streak not found', ErrorCodes.STREAK_NOT_FOUND);
     }
-
-    console.log('📊 Current streak data:', streak);
 
     const now = new Date();
     const today = now.toISOString().split('T')[0];
 
     if (hasCheckedInToday(streak.check_ins || [], now)) {
-      throw new Error('Already checked in today!');
+      throw new AppError('Already checked in today', ErrorCodes.OPERATION_FAILED);
     }
 
     const { shouldReset } = detectStreakReset(streak.last_check_in, streak.current_streak);
     const newCount = shouldReset ? 1 : (streak.current_streak || 0) + 1;
     const newBestCount = Math.max(newCount, streak.longest_streak || 0);
     const checkIns = Array.isArray(streak.check_ins) ? streak.check_ins : [];
-
-    console.log('📝 Updating with:', {
-      current_streak: newCount,
-      longest_streak: newBestCount,
-      check_ins_count: checkIns.length + 1,
-      today: today,
-    });
 
     const { data, error } = await supabase
       .from('streaks')
@@ -276,16 +338,12 @@ const checkInStreak = async (userId, streakId) => {
       .select()
       .single();
 
-    if (error) {
-      console.error('❌ Error updating streak:', error);
-      throw error;
-    }
+    if (error) throw parseError(error, 'checkInStreak');
     
-    console.log('✅ Streak updated successfully:', data);
-    return data;
+    console.log('✅ Check-in successful:', data);
+    return formatStreakFromDB(data);
   } catch (error) {
-    console.error('❌ Error checking in:', error);
-    throw error;
+    throw error instanceof AppError ? error : parseError(error, 'checkInStreak');
   }
 };
 
@@ -515,8 +573,8 @@ export const streakService = {
   deleteStreak,
   archiveStreak,
   unarchiveStreak,
-  freezeStreak,
   useFreeze: freezeStreak,
+  freezeStreak,
   recoverStreak,
   updateGoal,
 };

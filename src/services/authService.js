@@ -1,7 +1,9 @@
 ﻿import { supabase } from '../supabase';
 
 // Demo mode using localStorage if Supabase is not configured
-const DEMO_MODE = !import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY;
+const DEMO_MODE = !supabase;
+
+console.log(DEMO_MODE ? '🔴 Auth Demo Mode' : '📡 Auth Supabase Mode');
 
 export const register = async (email, password, displayName) => {
   try {
@@ -130,23 +132,71 @@ export const subscribeToAuthStateChange = (callback) => {
     return () => {};
   }
 
-  const { data: { subscription } } = supabase.auth.onAuthStateChange(
-    async (event, session) => {
-      if (session?.user) {
-        const user = session.user;
-        callback({
-          uid: user.id,
-          email: user.email,
-          displayName: user.user_metadata?.display_name || user.email.split('@')[0],
-        });
-      } else {
-        callback(null);
+  let subscription = null;
+  let timeoutId = null;
+  let hasResponded = false;
+
+  // Set a timeout to fall back to demo mode if auth doesn't respond in 3 seconds
+  timeoutId = setTimeout(() => {
+    if (!hasResponded) {
+      console.warn('⚠️ Auth state subscription timeout - falling back to demo mode');
+      hasResponded = true;
+      
+      // Unsubscribe from the hanging connection
+      if (subscription?.unsubscribe) {
+        try {
+          subscription.unsubscribe();
+        } catch (e) {
+          // Silently ignore unsubscribe errors
+        }
       }
+      
+      // Fall back to demo mode
+      const demoUser = localStorage.getItem('demoUser');
+      callback(demoUser ? JSON.parse(demoUser) : null);
     }
-  );
+  }, 3000);
+
+  try {
+    const { data: { subscription: sub } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!hasResponded) {
+          hasResponded = true;
+          clearTimeout(timeoutId);
+          
+          if (session?.user) {
+            const user = session.user;
+            callback({
+              uid: user.id,
+              email: user.email,
+              displayName: user.user_metadata?.display_name || user.email.split('@')[0],
+            });
+          } else {
+            callback(null);
+          }
+        }
+      }
+    );
+    subscription = sub;
+  } catch (error) {
+    console.warn('⚠️ Auth state subscription error:', error.message);
+    if (!hasResponded) {
+      hasResponded = true;
+      clearTimeout(timeoutId);
+      
+      // Fall back to demo mode
+      const demoUser = localStorage.getItem('demoUser');
+      callback(demoUser ? JSON.parse(demoUser) : null);
+    }
+  }
 
   return () => {
-    subscription?.unsubscribe();
+    clearTimeout(timeoutId);
+    try {
+      subscription?.unsubscribe?.();
+    } catch (e) {
+      // Silently ignore unsubscribe errors
+    }
   };
 };
 

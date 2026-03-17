@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, BarChart3, Calendar, Flame, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { useStreaks } from '../hooks/useStreaks';
+import { useToast } from '../components/Toast';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
 import { StreakCard } from '../components/StreakCard';
@@ -14,10 +15,12 @@ import { StreakControls } from '../components/StreakControls';
 import { EmptyState, SkeletonLoader, Button, Alert } from '../components/common';
 import { streakService } from '../services/streakService';
 import { notificationService } from '../services/notificationService';
+import { parseError } from '../utils/errorHandler';
 import { hasCheckedInToday } from '../utils/streakUtils';
 
 export const DashboardPage = () => {
   const { user } = useAuth();
+  const toast = useToast();
   const {
     streaks,
     loading,
@@ -114,10 +117,11 @@ export const DashboardPage = () => {
       await createStreak(formData);
       setShowModal(false);
       setTemplateData(null);
-      setMessage({ type: 'success', text: 'Streak created successfully! 🎉' });
+      toast.success(`✅ Streak "${formData.name}" created! 🎉`);
       notificationService.showNotification('Streak Created!', { body: `Tracking "${formData.name}"!` });
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to create streak.' });
+      const error = parseError(err, 'handleCreateStreak');
+      toast.error(`❌ ${error.message}`);
     } finally {
       setModalLoading(false);
     }
@@ -129,9 +133,10 @@ export const DashboardPage = () => {
       await updateStreak(editingStreak.id, formData);
       setShowModal(false);
       setEditingStreak(null);
-      setMessage({ type: 'success', text: 'Streak updated successfully!' });
+      toast.success(`✅ Streak updated!`);
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to update streak.' });
+      const error = parseError(err, 'handleUpdateStreak');
+      toast.error(`❌ ${error.message}`);
     } finally {
       setModalLoading(false);
     }
@@ -142,9 +147,10 @@ export const DashboardPage = () => {
     try {
       setActionLoading(streakId);
       await deleteStreak(streakId);
-      setMessage({ type: 'success', text: 'Streak deleted.' });
+      toast.success('✅ Streak deleted.');
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to delete streak.' });
+      const error = parseError(err, 'handleDeleteStreak');
+      toast.error(`❌ ${error.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -154,9 +160,10 @@ export const DashboardPage = () => {
     try {
       setActionLoading(streakId);
       await streakService.archiveStreak(user?.uid, streakId);
-      setMessage({ type: 'success', text: 'Streak archived.' });
+      toast.success('📦 Streak archived.');
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to archive streak.' });
+      const error = parseError(err, 'handleArchiveStreak');
+      toast.error(`❌ ${error.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -166,9 +173,10 @@ export const DashboardPage = () => {
     try {
       setActionLoading(streakId);
       await streakService.unarchiveStreak(user?.uid, streakId);
-      setMessage({ type: 'success', text: 'Streak restored.' });
+      toast.success('✨ Streak restored.');
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to restore streak.' });
+      const error = parseError(err, 'handleUnarchiveStreak');
+      toast.error(`❌ ${error.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -181,25 +189,26 @@ export const DashboardPage = () => {
       const streak = streaks.find((s) => s.id === streakId);
 
       // Fun messages
-      const msgs = ['Nice work!', 'Keep it up!', 'On fire! 🔥', 'Unstoppable!', 'Legendary!'];
+      const msgs = ['🔥 Nice work!', '💪 Keep it up!', '⚡ On fire!', '🚀 Unstoppable!', '👑 Legendary!'];
       const randomMsg = msgs[Math.floor(Math.random() * msgs.length)];
 
-      setMessage({ type: 'success', text: `${randomMsg} Checked in for ${streak?.name}` });
+      toast.success(`${randomMsg} ${streak?.currentCount} day streak! 🎉`);
 
       // Trigger notifications and haptic feedback
       if (navigator.vibrate) {
-        navigator.vibrate([50, 30, 50]); // Double tap vibration
+        navigator.vibrate([50, 30, 50]);
       }
       
       // Show push notification
-      notificationService.showNotification(`✅ ${streak?.name} checked in!`, {
-        body: `${randomMsg} ${streak?.currentCount} day streak!`,
+      notificationService.showNotification(`✅ ${streak?.name}`, {
+        body: `${randomMsg} Check-in confirmed!`,
         tag: 'streak-checkin',
         vibrate: [200, 100, 200],
       });
 
     } catch (err) {
-      setMessage({ type: 'error', text: err.message || 'Failed to check in.' });
+      const error = parseError(err, 'handleCheckIn');
+      toast.error(`❌ ${error.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -209,9 +218,10 @@ export const DashboardPage = () => {
     try {
       setActionLoading(streakId);
       await useFreeze(streakId);
-      setMessage({ type: 'success', text: 'Streak frozen! ❄️ Protected for today.' });
+      toast.success('❄️ Streak frozen! Protected for today.');
     } catch (err) {
-      setMessage({ type: 'error', text: err.message });
+      const error = parseError(err, 'handleUseFreeze');
+      toast.error(`❌ ${error.message}`);
     } finally {
       setActionLoading(null);
     }
@@ -222,9 +232,10 @@ export const DashboardPage = () => {
     try {
       setActionLoading(streakId);
       await recoverStreak(streakId);
-      setMessage({ type: 'success', text: 'Streak recovered! Penalty applied.' });
+      toast.success('🔄 Streak recovered! -2 day penalty applied.');
     } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to recover streak.' });
+      const error = parseError(err, 'handleRecover');
+      toast.error(`❌ ${error.message}`);
     } finally {
       setActionLoading(null);
     }

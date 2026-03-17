@@ -1,19 +1,26 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Bell, Moon, Zap, LogOut, Lock, ChevronLeft } from 'lucide-react';
+import { Bell, Moon, Zap, LogOut, Lock, ChevronLeft, Download, FileJson, FileText } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
+import { useStreaks } from '../hooks/useStreaks';
+import { useTheme } from '../context/ThemeContext';
+import { useToast } from '../components/Toast';
 import { Button, Alert } from '../components/common';
 import { Header } from '../components/Header';
 import { Footer } from '../components/Footer';
+import { exportService } from '../services/exportService';
 
 export const SettingsPage = () => {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const { theme, toggle: toggleTheme } = useTheme();
+  const { streaks } = useStreaks(user?.uid);
+  const toast = useToast();
   
   const [settings, setSettings] = useState({
     notifications: true,
-    darkMode: true,
+    darkMode: theme === 'dark',
     dailyReminder: '09:00',
     strikeNotifications: true,
     soundEnabled: true,
@@ -24,6 +31,7 @@ export const SettingsPage = () => {
   const [message, setMessage] = useState(null);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [activeTab, setActiveTab] = useState('general');
+  const [exportLoading, setExportLoading] = useState(false);
 
   // Load settings from localStorage on mount
   useEffect(() => {
@@ -46,15 +54,46 @@ export const SettingsPage = () => {
     
     // Apply theme if it's darkMode
     if (key === 'darkMode') {
-      if (value) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
+      toggleTheme();
     }
     
-    setMessage({ type: 'success', text: 'Setting updated!' });
-    setTimeout(() => setMessage(null), 2000);
+    toast.success('Setting updated!', 2000);
+  };
+
+  const handleExportCSV = () => {
+    try {
+      setExportLoading(true);
+      exportService.exportToCSV(streaks, `streaks-${new Date().toISOString().split('T')[0]}.csv`);
+      toast.success('✅ Exported as CSV!', 3000);
+    } catch (err) {
+      toast.error('❌ Export failed: ' + err.message, 3000);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleExportJSON = () => {
+    try {
+      setExportLoading(true);
+      exportService.exportToJSON(streaks, `streaks-${new Date().toISOString().split('T')[0]}.json`);
+      toast.success('✅ Exported as JSON!', 3000);
+    } catch (err) {
+      toast.error('❌ Export failed: ' + err.message, 3000);
+    } finally {
+      setExportLoading(false);
+    }
+  };
+
+  const handleExportPDF = () => {
+    try {
+      setExportLoading(true);
+      exportService.exportToPDF(streaks);
+      toast.success('✅ Opened print dialog!', 3000);
+    } catch (err) {
+      toast.error('❌ Export failed: ' + err.message, 3000);
+    } finally {
+      setExportLoading(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -291,9 +330,53 @@ export const SettingsPage = () => {
                     </Button>
                   </div>
 
-                  <Button variant="secondary" size="sm" className="w-full">
-                    📥 Download Your Data
-                  </Button>
+                  <div className="bg-slate-800/30 rounded-lg p-4 border border-slate-700/50 space-y-3">
+                    <div>
+                      <p className="font-semibold text-white mb-3 flex items-center gap-2">
+                        <Download className="w-5 h-5" />
+                        Export Your Data
+                      </p>
+                      <p className="text-sm text-slate-400 mb-3">Download all your streaks in various formats</p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleExportCSV}
+                          loading={exportLoading}
+                          disabled={streaks.length === 0}
+                        >
+                          <FileText className="w-4 h-4" />
+                          CSV
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleExportJSON}
+                          loading={exportLoading}
+                          disabled={streaks.length === 0}
+                        >
+                          <FileJson className="w-4 h-4" />
+                          JSON
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full"
+                          onClick={handleExportPDF}
+                          loading={exportLoading}
+                          disabled={streaks.length === 0}
+                        >
+                          <Download className="w-4 h-4" />
+                          PDF
+                        </Button>
+                      </div>
+                      {streaks.length === 0 && (
+                        <p className="text-xs text-slate-500 mt-2">✨ Create some streaks first to export</p>
+                      )}
+                    </div>
+                  </div>
                 </div>
               )}
 

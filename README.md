@@ -1,6 +1,6 @@
 # Streak Maintainer - Production Ready PWA
 
-A modern, full-stack Progressive Web App for tracking and maintaining streaks across multiple platforms (Snapchat, LeetCode, Duolingo) and personal habits.
+A modern, full-stack Progressive Web App for tracking and maintaining streaks across multiple platforms (Snapchat, LeetCode, Duolingo) and personal habits with gamification features.
 
 ## Features ✨
 
@@ -9,28 +9,31 @@ A modern, full-stack Progressive Web App for tracking and maintaining streaks ac
 - **✅ Daily Check-ins** - One-tap check-in system with automatic streak increment
 - **🛡️ Streak Protection** - 2 free freezes per month to prevent streak loss
 - **📊 Activity Heatmap** - GitHub-style calendar visualization
-- **🔐 Secure Authentication** - Firebase email/password auth
-- **🎨 Beautiful UI** - Dark mode, smooth animations, responsive design
+- **🔐 Secure Authentication** - Supabase email/password auth with JWT tokens
+- **🎨 Beautiful UI** - Dark/light mode, smooth animations, responsive design
 - **🔔 Notifications** - Local and push notification support
-- **☁️ Cloud Sync** - Real-time data sync with Firestore
+- **☁️ Cloud Sync** - Real-time data sync with PostgreSQL via Supabase
+- **📥 Data Export** - Export streaks as CSV, JSON, or PDF
+- **🎯 Gamification** - Badges, levels, achievements, and rankings
 
 ## Tech Stack 🛠️
 
 **Frontend:**
-- React 18 with Vite
-- Tailwind CSS for styling
-- Framer Motion for animations
+- React 18 with Vite for fast builds
+- Tailwind CSS v3.3 for styling
+- Framer Motion v10 for animations
 - Lucide React for icons
 
 **Backend:**
-- Firebase Authentication
-- Cloud Firestore
-- Firebase Cloud Messaging (optional)
+- Supabase Authentication (email/password)
+- PostgreSQL Database (via Supabase)
+- Real-time subscriptions via Supabase channels
+- Service Workers for offline support
 
 **PWA:**
-- Service Workers for offline support
-- Web App Manifest
-- Cache-first strategies
+- Service Workers for offline-first strategy
+- Web App Manifest for installability
+- Cache management and sync strategies
 
 ## Project Structure 📁
 
